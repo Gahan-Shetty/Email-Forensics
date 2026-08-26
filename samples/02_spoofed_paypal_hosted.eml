@@ -1,0 +1,33 @@
+Received: from inbox.google.com (10.20.30.40) by inbox.google.com with internal-relay;
+	Thu, 20 Aug 2026 09:00:04 +0000
+Received: from mx.google.com (mx.google.com [209.85.220.41])
+	by mail-sor-f41.google.com with SMTPS id y2sor4839201pfb.88.2026.08.20.09.00.03;
+	Thu, 20 Aug 2026 09:00:03 +0000
+Received: from mail.paypa1-secure.tld ([203.0.113.9])
+	by mx.google.com with ESMTPS id x1si2938475pgc.117.2026.08.20.09.00.01
+	for <victim@gmail.com>
+	(version=TLS1_2 cipher=ECDHE-RSA-AES128-GCM-SHA256);
+	Thu, 20 Aug 2026 09:00:01 +0000
+Authentication-Results: mx.google.com;
+	spf=fail (google.com: domain of bounce@sendgrid.net does not designate 203.0.113.9 as permitted sender) smtp.mailfrom=bounce@sendgrid.net;
+	dmarc=fail (p=REJECT sp=REJECT dis=NONE) header.from=paypa1-secure.tld
+Return-Path: <bounce@sendgrid.net>
+From: "PayPal Service" <service@paypa1-secure.tld>
+Reply-To: collect@mailbox.ru
+To: victim@gmail.com
+Subject: Your account will be suspended within 24 hours
+Date: Thu, 20 Aug 2026 09:00:00 +0000
+Message-ID: <a1b2c3d4@paypa1-secure.tld>
+X-Mailer: PHPMailer 5.2.9
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Dear customer,
+
+We detected unusual activity on your account. Your account will be suspended
+within 24 hours unless you confirm your identity. Click here to verify your
+account immediately:
+
+http://paypa1-secure.tld/verify?id=8812
+
+PayPal Security Team

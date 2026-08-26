@@ -1,0 +1,198 @@
+{
+  "schema_version": "1.0",
+  "analysis_id": "b7c1f0e2-3a4b-4c5d-8e9f-0a1b2c3d4e5f",
+  "analyzed_at": "2026-08-26T10:14:22Z",
+  "input": {
+    "source": "file",
+    "filename": "02_spoofed_paypal_hosted.eml",
+    "byte_size": 12043,
+    "sha256": "9f2c8a1b4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e741"
+  },
+  "headers": {
+    "from": { "display_name": "PayPal Service", "address": "service@paypa1-secure.tld", "domain": "paypa1-secure.tld" },
+    "reply_to": { "display_name": null, "address": "collect@mailbox.ru", "domain": "mailbox.ru" },
+    "return_path": { "display_name": null, "address": "bounce@sendgrid.net", "domain": "sendgrid.net" },
+    "to": [ { "display_name": null, "address": "victim@gmail.com", "domain": "gmail.com" } ],
+    "cc": [],
+    "subject": "Your account will be suspended within 24 hours",
+    "message_id": "<a1b2c3d4@paypa1-secure.tld>",
+    "message_id_domain": "paypa1-secure.tld",
+    "date": "2026-08-20T09:00:00Z",
+    "date_raw": "Thu, 20 Aug 2026 09:00:00 +0000",
+    "x_mailer": "PHPMailer 5.2.9",
+    "raw_header_count": 27,
+    "missing_headers": ["DKIM-Signature"],
+    "body_preview": "Dear customer, we detected unusual activity on your account. Your account will be suspended within 24 hours unless you confirm your identity. Click here to verify your account immediately.",
+    "anomalies": [
+      { "code": "REPLYTO_DOMAIN_MISMATCH", "severity": "medium", "detail": "Reply-To domain mailbox.ru does not match From domain paypa1-secure.tld" },
+      { "code": "RETURNPATH_DOMAIN_MISMATCH", "severity": "medium", "detail": "Return-Path domain sendgrid.net does not match From domain paypa1-secure.tld" },
+      { "code": "DISPLAY_NAME_LOOKALIKE", "severity": "high", "detail": "Display name 'PayPal Service' implies paypal.com but sending domain is paypa1-secure.tld" }
+    ]
+  },
+  "received_chain": [
+    {
+      "hop_index": 1,
+      "raw": "from mail.paypa1-secure.tld ([203.0.113.9]) by mx.google.com with ESMTPS id x1si2 for <victim@gmail.com>; Thu, 20 Aug 2026 09:00:01 +0000",
+      "from_host": "mail.paypa1-secure.tld",
+      "from_ip": "203.0.113.9",
+      "by_host": "mx.google.com",
+      "by_ip": null,
+      "protocol": "ESMTPS",
+      "tls": true,
+      "timestamp": "2026-08-20T09:00:01Z",
+      "timestamp_raw": "Thu, 20 Aug 2026 09:00:01 +0000",
+      "is_private_ip": false,
+      "parse_ok": true
+    },
+    {
+      "hop_index": 2,
+      "raw": "from mx.google.com (mx.google.com [209.85.220.41]) by mail-sor-f41.google.com with SMTPS id y2sor4; Thu, 20 Aug 2026 09:00:03 +0000",
+      "from_host": "mx.google.com",
+      "from_ip": "209.85.220.41",
+      "by_host": "mail-sor-f41.google.com",
+      "by_ip": null,
+      "protocol": "SMTPS",
+      "tls": true,
+      "timestamp": "2026-08-20T09:00:03Z",
+      "timestamp_raw": "Thu, 20 Aug 2026 09:00:03 +0000",
+      "is_private_ip": false,
+      "parse_ok": true
+    },
+    {
+      "hop_index": 3,
+      "raw": "from 10.20.30.40 by inbox.google.com with internal-relay; Thu, 20 Aug 2026 09:00:04 +0000",
+      "from_host": null,
+      "from_ip": "10.20.30.40",
+      "by_host": "inbox.google.com",
+      "by_ip": null,
+      "protocol": null,
+      "tls": false,
+      "timestamp": "2026-08-20T09:00:04Z",
+      "timestamp_raw": "Thu, 20 Aug 2026 09:00:04 +0000",
+      "is_private_ip": true,
+      "parse_ok": true
+    }
+  ],
+  "chain_integrity": {
+    "hop_count": 3,
+    "timestamps_monotonic": true,
+    "backward_time_jumps": 0,
+    "largest_gap_seconds": 2,
+    "gaps_suspected": false,
+    "malformed_hops": 0,
+    "notes": ["Routing chain is internally consistent; no hops appear to have been removed."]
+  },
+  "authentication": {
+    "spf":   { "result": "fail", "domain": "paypa1-secure.tld", "selector": null, "policy": null, "raw": "spf=fail (google.com: domain of bounce@sendgrid.net does not designate 203.0.113.9 as permitted sender)", "source": "mx.google.com" },
+    "dkim":  { "result": "none", "domain": null, "selector": null, "policy": null, "raw": null, "source": null },
+    "dmarc": { "result": "fail", "domain": "paypa1-secure.tld", "selector": null, "policy": "reject", "raw": "dmarc=fail (p=REJECT sp=REJECT dis=NONE) header.from=paypa1-secure.tld", "source": "mx.google.com" },
+    "arc":   { "result": "none", "domain": null, "selector": null, "policy": null, "raw": null, "source": null },
+    "alignment": {
+      "spf_aligned": false,
+      "dkim_aligned": false,
+      "from_vs_returnpath_match": false,
+      "envelope_from_domain": "sendgrid.net"
+    },
+    "verified_by": "mx.google.com",
+    "self_asserted_only": false
+  },
+  "ip_candidates": [
+    {
+      "ip": "203.0.113.9",
+      "hop_index": 1,
+      "trust_tier": "provider_observed",
+      "trust_score": 0.86,
+      "observed_by": "mx.google.com",
+      "observed_by_is_trusted_receiver": true,
+      "reasons": [
+        "Recorded by Google receiving infrastructure, which we treat as a trusted observer.",
+        "Public routable address, delivered over TLS."
+      ],
+      "excluded": false,
+      "exclusion_reason": null
+    },
+    {
+      "ip": "209.85.220.41",
+      "hop_index": 2,
+      "trust_tier": "provider_observed",
+      "trust_score": 0.72,
+      "observed_by": "mail-sor-f41.google.com",
+      "observed_by_is_trusted_receiver": true,
+      "reasons": [
+        "Internal Google relay hop, not the originating sender.",
+        "Retained for routing completeness."
+      ],
+      "excluded": false,
+      "exclusion_reason": null
+    },
+    {
+      "ip": "10.20.30.40",
+      "hop_index": 3,
+      "trust_tier": "unverifiable",
+      "trust_score": 0.0,
+      "observed_by": "inbox.google.com",
+      "observed_by_is_trusted_receiver": true,
+      "reasons": ["RFC1918 private address used for provider-internal delivery."],
+      "excluded": true,
+      "exclusion_reason": "RFC1918 private address, not externally routable"
+    }
+  ],
+  "origin": {
+    "selected_ip": "203.0.113.9",
+    "selected_from_hop": 1,
+    "geo": {
+      "country": "Singapore",
+      "country_code": "SG",
+      "region": "Central Singapore",
+      "city": "Singapore",
+      "lat": 1.2897,
+      "lon": 103.8501,
+      "isp": "DigitalOcean, LLC",
+      "org": "DigitalOcean",
+      "asn": "AS14061",
+      "is_datacenter": true,
+      "is_proxy": false,
+      "is_mobile": false,
+      "lookup_source": "ip-api.com"
+    },
+    "infrastructure_type": "hosting",
+    "confidence": "medium",
+    "confidence_reasons": [
+      "The address was observed and recorded by a trusted receiving provider (mx.google.com).",
+      "The address belongs to datacenter/hosting infrastructure (DigitalOcean), which identifies a rented server rather than the operator's own connection.",
+      "SPF and DKIM did not pass, so the sending domain's own infrastructure cannot corroborate this route."
+    ],
+    "statement": "Observed sending infrastructure is geolocated to Singapore, SG. This represents visible email-delivery infrastructure, not a verified physical location of the sender. Confidence: medium."
+  },
+  "map_hops": [
+    { "hop_index": 1, "ip": "203.0.113.9", "lat": 1.2897, "lon": 103.8501, "label": "DigitalOcean — Singapore, SG", "confidence": "medium", "is_selected_origin": true },
+    { "hop_index": 2, "ip": "209.85.220.41", "lat": 37.4056, "lon": -122.0775, "label": "Google LLC — Mountain View, US", "confidence": "high", "is_selected_origin": false }
+  ],
+  "risk": {
+    "score": 85,
+    "band": "critical",
+    "verdict": "likely_phishing",
+    "signals": [
+      { "code": "AUTH_FAIL",        "label": "SPF/DKIM/DMARC failure",               "points": 30, "triggered": true,  "evidence": "spf=fail, dkim=none, dmarc=fail (p=reject)" },
+      { "code": "INFRA_FLAGGED",    "label": "VPN / proxy / hosting / datacenter",   "points": 25, "triggered": true,  "evidence": "AS14061 DigitalOcean — hosting/datacenter infrastructure" },
+      { "code": "REPLYTO_MISMATCH", "label": "Reply-To domain != From domain",       "points": 20, "triggered": true,  "evidence": "Reply-To domain mailbox.ru does not match From domain paypa1-secure.tld" },
+      { "code": "CHAIN_ANOMALY",    "label": "Broken or backward Received chain",    "points": 15, "triggered": false, "evidence": null },
+      { "code": "URGENCY_KEYWORDS", "label": "Suspicious urgency language",          "points": 10, "triggered": true,  "evidence": "matched: 'suspended', 'within 24 hours', 'confirm your identity'" }
+    ]
+  },
+  "report": {
+    "report_id": "RPT-20260826-0017",
+    "generated_at": "2026-08-26T10:14:23Z",
+    "json_url": "/api/v1/report/b7c1f0e2-3a4b-4c5d-8e9f-0a1b2c3d4e5f.json",
+    "pdf_url": "/api/v1/report/b7c1f0e2-3a4b-4c5d-8e9f-0a1b2c3d4e5f.pdf",
+    "evidence_sha256": "4d0a91c7f3e8b2145a6d9c0e7f18b3a2c5d4e6f70819a2b3c4d5e6f708192bb17",
+    "custody_log_entry": 17,
+    "previous_entry_hash": "1c8e5b3a7d9f2041e6c8b0a3d5f7192b4c6d8e0f2a4b6c8d0e2f4a6b8c0d90fa"
+  },
+  "warnings": [],
+  "timings_ms": { "parse": 12, "auth": 3, "geoip": 210, "score": 1, "report": 88, "total": 314 },
+  "module_status": {
+    "parsing": "live", "auth": "live", "ranking": "live",
+    "geoip": "live", "scoring": "live", "report": "live"
+  }
+}

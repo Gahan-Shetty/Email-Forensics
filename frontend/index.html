@@ -1,0 +1,83 @@
+<!doctype html>
+<!--
+  OWNER: M5 (Frontend UI).  Only M5 edits this file.
+
+  Script load order matters: api.js and map.js define EFR.api / EFR.map,
+  render.js defines EFR.render, app.js wires them together and must load last.
+
+  Serve this over HTTP (scripts/run_frontend.sh), not file:// - fetch() to the
+  API is CORS-blocked from a file:// origin and you will lose 20 minutes to it.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email Forensic Analyzer — SIH26106</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">EFA</span>
+    <div>
+      <h1>Email Forensic Analyzer</h1>
+      <p class="tagline">Header forensics · confidence-scored origin · tamper-evident reporting</p>
+    </div>
+  </div>
+  <div class="status-strip" id="module-status" aria-live="polite"></div>
+</header>
+
+<main>
+  <!-- ============ INPUT ============ -->
+  <section class="panel" id="panel-input">
+    <h2>1 · Submit a message</h2>
+    <div class="tabs" role="tablist">
+      <button class="tab is-active" data-mode="paste" role="tab">Paste raw source</button>
+      <button class="tab" data-mode="file" role="tab">Upload .eml</button>
+    </div>
+
+    <div class="tab-body" data-body="paste">
+      <label for="raw-input" class="sr-only">Raw email source</label>
+      <textarea id="raw-input" rows="12" spellcheck="false"
+        placeholder="Paste the FULL raw source, including Received: and From: headers.&#10;&#10;In Gmail: ⋮ → Show original → Copy to clipboard&#10;In Outlook: File → Properties → Internet headers"></textarea>
+    </div>
+
+    <div class="tab-body is-hidden" data-body="file">
+      <div class="dropzone" id="dropzone" tabindex="0">
+        <p><strong>Drop a .eml file here</strong></p>
+        <p class="muted">or click to browse · max 2 MB</p>
+        <input type="file" id="file-input" accept=".eml,.txt,.msg" hidden>
+      </div>
+      <p class="muted" id="file-chosen"></p>
+    </div>
+
+    <div class="actions">
+      <button id="btn-analyze" class="btn btn-primary">Analyze message</button>
+      <button id="btn-sample" class="btn btn-ghost">Load demo response</button>
+      <label class="checkbox">
+        <input type="checkbox" id="opt-skip-geoip"> Offline mode (skip geolocation)
+      </label>
+    </div>
+  </section>
+
+  <!-- ============ RESULTS (rendered by M5's render.js) ============ -->
+  <div id="results" class="results" aria-live="polite"></div>
+</main>
+
+<footer class="footer">
+  <p>Origin locations describe visible email-delivery infrastructure, not a
+     verified physical location of any sender. Every result carries an explicit
+     confidence level.</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="js/api.js"></script>
+<script src="js/map.js"></script>
+<script src="js/render.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

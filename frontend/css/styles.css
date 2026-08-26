@@ -1,0 +1,172 @@
+/* OWNER: M5 (Frontend UI). This file is yours alone.
+ *
+ * The design tokens, panel/banner/pill/chip primitives and the map container
+ * are done - so map.js and render.js have classes to target from minute one.
+ * Fill in the layout of the six result panels as you build them.
+ *
+ * Palette note: the four risk-band colours are duplicated in
+ * backend/app/report/pdf_renderer.py BAND_COLOURS so the PDF matches the
+ * screen. Change one, change both. */
+
+:root {
+  color-scheme: light;
+
+  --bg:        #f6f7f9;
+  --surface:   #ffffff;
+  --ink:       #14171a;
+  --ink-muted: #5b6470;
+  --line:      #dfe3e8;
+  --accent:    #1f3a8a;
+
+  --low:       #1a7f37;
+  --medium:    #9a6700;
+  --high:      #bc4c00;
+  --critical:  #b3261e;
+
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.10);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.55 var(--sans);
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ---------- header ---------- */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 24px; flex-wrap: wrap;
+  padding: 18px 28px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand-mark {
+  display: grid; place-items: center;
+  width: 42px; height: 42px; border-radius: 9px;
+  background: var(--accent); color: #fff;
+  font: 700 14px/1 var(--sans); letter-spacing: .06em;
+}
+.topbar h1 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: -.01em; }
+.tagline { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-muted); }
+
+.status-strip { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  font: 600 10.5px/1 var(--sans); letter-spacing: .04em; text-transform: uppercase;
+  padding: 5px 8px; border-radius: 999px; border: 1px solid var(--line);
+  color: var(--ink-muted); background: #fafbfc;
+}
+.chip-live   { color: var(--low);      border-color: #b7e0c2; background: #f0f9f3; }
+.chip-stub   { color: var(--medium);   border-color: #e8d59b; background: #fdf8ec; }
+.chip-error  { color: var(--critical); border-color: #f0bdb9; background: #fdf1f0; }
+
+/* ---------- layout ---------- */
+main { max-width: 1060px; margin: 0 auto; padding: 24px 20px 48px; }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px 22px;
+  margin-bottom: 18px;
+}
+.panel h2 {
+  margin: 0 0 14px;
+  font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.results { margin-top: 4px; }
+.muted { color: var(--ink-muted); font-size: 13.5px; }
+
+/* ---------- input ---------- */
+.tabs { display: flex; gap: 4px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+.tab {
+  border: 0; background: none; cursor: pointer;
+  padding: 9px 14px; font: 500 13.5px var(--sans); color: var(--ink-muted);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.tab.is-active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.tab-body.is-hidden { display: none; }
+
+textarea {
+  width: 100%; padding: 12px 14px;
+  font: 12.5px/1.6 var(--mono);
+  color: var(--ink); background: #fcfcfd;
+  border: 1px solid var(--line); border-radius: 8px; resize: vertical;
+}
+textarea:focus, .dropzone:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.dropzone {
+  border: 1.5px dashed var(--line); border-radius: 8px;
+  padding: 30px; text-align: center; cursor: pointer; background: #fcfcfd;
+}
+.dropzone.is-hover { border-color: var(--accent); background: #f4f6fd; }
+.dropzone p { margin: 3px 0; }
+
+.actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.btn {
+  border: 1px solid var(--line); border-radius: 7px; cursor: pointer;
+  padding: 9px 16px; font: 600 13.5px var(--sans); background: var(--surface); color: var(--ink);
+}
+.btn:hover { border-color: #c6ccd4; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-ghost { color: var(--ink-muted); }
+.checkbox { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-muted); }
+
+/* ---------- pills, banners, map ---------- */
+.pill {
+  display: inline-block; padding: 3px 9px; border-radius: 999px;
+  font: 600 11.5px/1.5 var(--sans); border: 1px solid currentColor;
+}
+.pill-high, .pill-low      { color: var(--low); }
+.pill-medium               { color: var(--medium); }
+.pill-critical             { color: var(--critical); }
+/* NOTE: "high" means high CONFIDENCE (good) but also high RISK (bad).
+   Use .pill-risk-high for the risk band so the colours don't contradict. */
+.pill-risk-high            { color: var(--high); }
+.pill-risk-critical        { color: var(--critical); }
+
+.banner { border-radius: var(--radius); padding: 13px 16px; margin-bottom: 16px; border: 1px solid; }
+.banner p, .banner ul { margin: 6px 0 0; }
+.banner ul { padding-left: 20px; }
+.banner-warn  { background: #fdf8ec; border-color: #e8d59b; color: #6b4e05; }
+.banner-error { background: #fdf1f0; border-color: #f0bdb9; color: #8c1d18; }
+
+.map { height: 340px; border-radius: 8px; border: 1px solid var(--line); background: #eef1f4; }
+.hop-pin { background: none; border: 0; }
+.leaflet-container { font: 12.5px var(--sans); border-radius: 8px; }
+
+code, .mono { font-family: var(--mono); font-size: 12.5px; }
+
+.loading { display: flex; align-items: center; gap: 10px; color: var(--ink-muted); }
+.spinner {
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid var(--line); border-top-color: var(--accent);
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.footer {
+  max-width: 1060px; margin: 0 auto; padding: 0 20px 40px;
+  font-size: 12.5px; color: var(--ink-muted);
+}
+
+@media (max-width: 640px) {
+  .topbar { padding: 14px 16px; }
+  main { padding: 16px 12px 32px; }
+  .panel { padding: 16px; }
+}

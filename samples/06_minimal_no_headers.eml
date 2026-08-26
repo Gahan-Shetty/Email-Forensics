@@ -1,0 +1,5 @@
+From: someone@example.com
+To: victim@example.org
+Subject: hello
+
+No Received headers at all. This message exercises the no-origin path.

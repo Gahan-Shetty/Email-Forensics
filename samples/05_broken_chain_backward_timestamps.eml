@@ -1,0 +1,18 @@
+Received: from relay2.shadyhost.tld ([91.219.236.18])
+	by mx.google.com with ESMTP id 8812kk;
+	Sun, 23 Aug 2026 11:45:02 +0000
+Received: from relay9.unrelated-host.tld ([45.133.1.202])
+	by relay2.shadyhost.tld with SMTP;
+	Sun, 23 Aug 2026 11:52:40 +0000
+Received: from localhost ([127.0.0.1])
+	by relay9.unrelated-host.tld with SMTP;
+	Sun, 23 Aug 2026 11:44:00 +0000
+From: Delivery Notice <noreply@courier-tracking-update.tld>
+To: victim@gmail.com
+Subject: Final warning: parcel will be returned
+Date: Sun, 23 Aug 2026 11:43:00 +0000
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Final warning. Your parcel could not be delivered. Click here to update your
+payment of 45.00 to release the shipment. Immediate action required.

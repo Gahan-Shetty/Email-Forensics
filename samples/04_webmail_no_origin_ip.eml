@@ -1,0 +1,20 @@
+Received: from mail-wr1-f54.google.com (mail-wr1-f54.google.com [209.85.221.54])
+	by mx.outlook.com with ESMTPS id 4Wk8Lm2Np9;
+	Sat, 22 Aug 2026 07:10:44 +0000
+Authentication-Results: mx.outlook.com;
+	spf=pass smtp.mailfrom=gmail.com;
+	dkim=pass header.d=gmail.com header.s=20230601;
+	dmarc=pass (p=NONE) header.from=gmail.com
+Return-Path: <randomsender9931@gmail.com>
+From: HR Recruitment <randomsender9931@gmail.com>
+To: jobs@company.example
+Subject: Re: Opening for data entry - immediate joining
+Date: Sat, 22 Aug 2026 07:10:40 +0000
+Message-ID: <CAF9x7Qm2Zk8vB@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Hi, we reviewed your profile and would like to proceed. Please share your
+Aadhaar and bank details to complete onboarding. Position starts Monday.
+
+HR Team

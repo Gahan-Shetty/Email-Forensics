@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.env
+.pytest_cache/
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# generated at runtime - NEVER commit, these cause merge conflicts
+evidence/*.pdf
+evidence/*.json
+evidence/custody_log.jsonl
+backend/app/data/GeoLite2-City.mmdb
+
+# keep the folders themselves
+!evidence/.gitkeep

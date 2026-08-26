@@ -1,0 +1,25 @@
+Received: from unknown ([185.242.4.77])
+	by mx.zoho.com with SMTP id 1755512345678
+	for <finance@targetcorp.example>;
+	Fri, 21 Aug 2026 14:32:11 +0000
+Authentication-Results: mx.zoho.com;
+	spf=softfail smtp.mailfrom=ceo@targetcorp-finance.tld;
+	dkim=none;
+	dmarc=fail (p=NONE) header.from=targetcorp-finance.tld
+Return-Path: <ceo@targetcorp-finance.tld>
+From: "Rajesh Menon (CEO)" <ceo@targetcorp-finance.tld>
+Reply-To: r.menon.private@protonmail.com
+To: finance@targetcorp.example
+Subject: URGENT - wire transfer needed before close of business
+Date: Fri, 21 Aug 2026 14:32:05 +0000
+Message-ID: <9f8e7d6c5b4a@targetcorp-finance.tld>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+I need you to process an urgent wire transfer before close of business today.
+This is time sensitive and confidential - do not discuss with anyone else on
+the team. Act now and confirm once done.
+
+Beneficiary details will follow in my next message.
+
+Rajesh

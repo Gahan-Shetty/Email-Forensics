@@ -1,0 +1,35 @@
+# ============================================================================
+#  SIH26106 - backend dependencies
+#
+#  CONFLICT RULE: each member has a PRE-ALLOCATED BLOCK below.
+#  Add your dependency ONLY inside your own block. Never reorder or
+#  reformat the file. This makes git merges on this file always clean.
+# ============================================================================
+
+# --- CORE (owner: M6 - Integration). Do not edit unless you are M6. --------
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+python-multipart==0.0.9
+
+# --- M1  Header & Received-chain parser ------------------------------------
+# (Python stdlib `email` needs nothing. Add here if you truly need more.)
+
+# --- M2  Auth checks & IP trust ranking -----------------------------------
+# optional, only if you get the offline path working:
+# dnspython==2.6.1
+
+# --- M3  Geolocation / confidence / risk scoring ---------------------------
+requests==2.32.3
+# optional offline fallback DB reader:
+# geoip2==4.8.0
+
+# --- M4  Forensic report & custody log -------------------------------------
+reportlab==4.2.2
+
+# --- M5  Frontend UI -------------------------------------------------------
+# (no python deps - pure HTML/CSS/JS)
+
+# --- M6  Testing -----------------------------------------------------------
+pytest==8.3.3
+httpx==0.27.2
