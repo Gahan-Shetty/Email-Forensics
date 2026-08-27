@@ -1,79 +1,156 @@
-"""IP candidate trust ranking.   OWNER: M2.
-
-Produces -> response["ip_candidates"]  (sorted, index 0 = most credible)
-
-This module is the intellectual core of the whole project.  It is the
-difference between "we grabbed the first IP we saw" (what every other team
-does) and "we ranked candidate IPs by how much we can trust whoever recorded
-them" (defensible forensics).  API_CONTRACT.md section 3.4 is the spec.
-
-The threat model, in one line: the sender controls every header they write, so
-an IP is only as trustworthy as the server that OBSERVED and RECORDED it.
 """
-from __future__ import annotations
+M2 — ip_ranking.py
+Owner: M2
 
-from ..core.config import TRUSTED_RECEIVER_DOMAINS
+Fills response["ip_candidates"]. See API_CONTRACT.md §3/§3.4/§5 and
+docs/02-M2-auth-and-ip-ranking.md.
 
-IS_STUB = True   # <-- M2: set False when rank_ip_candidates is implemented
+Core idea (say this out loud in the demo): a sender controls every byte of
+every header they write. They cannot control what the RECEIVING server
+writes when it accepts the connection, because that server observed the
+actual TCP source address. So an IP is exactly as trustworthy as the server
+that recorded it.
+"""
 
-# Trust tiers and their base scores.  Tune these against real samples.
+from app.core.config import TRUSTED_RECEIVER_DOMAINS
+
+IS_STUB = False
+
 TIER_BASE_SCORE = {
-    "provider_observed": 0.85,   # recorded by a receiver we trust to log honestly
-    "transit_relay": 0.55,       # recorded by some other real MTA in the path
-    "client_asserted": 0.25,     # only the sender's own headers claim it
-    "unverifiable": 0.05,        # malformed / no corroboration
+    "provider_observed": 0.85,
+    "transit_relay": 0.55,
+    "client_asserted": 0.25,
+    "unverifiable": 0.05,
 }
 
 
-def is_trusted_receiver(hostname: str | None) -> bool:
-    """Does this hostname belong to a provider we trust to log a sender IP?
-
-    TODO(M2): lowercase, strip trailing dot, then check whether the hostname
-    equals or ends with '.' + any entry in TRUSTED_RECEIVER_DOMAINS.
-    Substring matching is WRONG here: 'google.com.evil.tld' must not match.
-    Compare suffix-wise on label boundaries.
-
-    The domain list lives in core/config.py because M3's confidence model reads
-    the same list.  Add domains THERE, not here.
+def is_trusted_receiver(hostname):
     """
-    return False
-
-
-def rank_ip_candidates(chain: list[dict], auth: dict) -> list[dict]:
-    """MAIN ENTRY POINT for M2.  -> response["ip_candidates"]
-
-    Inputs are M1's received_chain and your own authentication dict.
-
-    TODO(M2) implementation order:
-      1. Walk the chain from hop 1 (closest to sender) upward.  For every hop
-         with a from_ip, build a candidate.
-      2. EXCLUDE (excluded=True + exclusion_reason, but KEEP in the list so the
-         UI can show the working):
-           - is_private_ip           -> "RFC1918/private address, not routable"
-           - duplicate of a candidate already seen at a lower hop_index
-      3. Assign trust_tier:
-           provider_observed  if is_trusted_receiver(hop["by_host"])
-           transit_relay      elif hop["by_host"] looks like a real MTA
-                              (has a dot, resolves-ish, not the same as from_host)
-           client_asserted    elif this is the very first hop and by_host is
-                              missing/unparseable
-           unverifiable       else / parse_ok is False
-      4. trust_score = TIER_BASE_SCORE[tier] with small adjustments:
-           +0.05  hop has TLS
-           +0.05  hop timestamp present and consistent with neighbours
-           -0.10  auth["self_asserted_only"] is True
-           -0.05  hop parse_ok is False
-         Clamp to [0.0, 1.0].  Round to 2dp so the JSON stays readable.
-      5. reasons: 1-3 short human sentences per candidate.  These get printed
-         verbatim in the forensic report, so write them like an analyst would:
-         "Recorded by Google receiving infrastructure", not "tier=0".
-      6. SORT: non-excluded first, then trust_score DESC, then hop_index ASC.
-         Ties broken by lower hop_index (closer to sender wins).
-
-    Contract guarantee you must uphold: if any non-excluded candidate exists,
-    it is at index 0.  M3 reads candidates[0] and trusts your ordering.
-
-    Return [] when the chain has no usable IP at all.  M3 then produces the
-    "no externally observed IP" origin - that path is tested, not an error.
+    Label-boundary match only. Substring matching is a security bug:
+    "google.com" in "google.com.evil.tld" is True — that must return False.
+    An attacker naming their relay google.com.evil.tld must NOT be promoted
+    to provider_observed.
     """
-    return []
+    if not hostname:
+        return False
+    h = hostname.strip().rstrip(".").lower()
+    return any(h == d or h.endswith("." + d) for d in TRUSTED_RECEIVER_DOMAINS)
+
+
+def _classify_tier(hop, hop_index):
+    by_host = hop.get("by_host")
+    from_host = hop.get("from_host")
+
+    if is_trusted_receiver(by_host):
+        return "provider_observed"
+
+    if by_host and "." in by_host and by_host != from_host:
+        return "transit_relay"
+
+    # first hop (closest to sender) with no by_host, or by_host unparseable
+    if hop_index == 1 and (not by_host or by_host == from_host):
+        return "client_asserted"
+
+    return "unverifiable"
+
+
+def _adjust_score(base, hop, auth):
+    score = base
+
+    if hop.get("tls"):
+        score += 0.05
+
+    if hop.get("timestamp") and hop.get("parse_ok", True):
+        # "consistent with neighbours" is assessed at the chain level by M1
+        # (chain_integrity). At the per-hop level we treat "has a parsed,
+        # present timestamp" as the proxy for this bonus, since ip_ranking
+        # does not receive chain_integrity as an argument.
+        score += 0.05
+
+    if auth and auth.get("self_asserted_only"):
+        score -= 0.10
+
+    if not hop.get("parse_ok", True):
+        score -= 0.05
+
+    return round(max(0.0, min(1.0, score)), 2)
+
+
+def _reasons_for(tier, hop, ip, excluded, exclusion_reason):
+    if excluded:
+        return [exclusion_reason]
+
+    by_host = hop.get("by_host")
+
+    if tier == "provider_observed":
+        return [
+            f"Recorded by {by_host}, which we treat as a trusted receiving provider.",
+            "Public routable address observed directly by that provider's own infrastructure.",
+        ]
+    if tier == "transit_relay":
+        return [
+            f"Recorded by {by_host}, an intermediate mail server we cannot independently verify as trustworthy.",
+            "Treated as corroborating evidence, not confirmed provider observation.",
+        ]
+    if tier == "client_asserted":
+        return [
+            "This is the sender's own first hop; no independent receiving server confirmed this address.",
+            "Only the sender's client claims this origin.",
+        ]
+    return [
+        "Hop could not be reliably parsed or corroborated by any trusted observer.",
+    ]
+
+
+def rank_ip_candidates(chain: list, auth: dict) -> list:
+    """-> response["ip_candidates"]
+
+    Contract guarantee: if any non-excluded candidate exists, it is at
+    index 0 after sorting. M3 reads candidates[0] and does not re-sort.
+    """
+    if not chain:
+        return []
+
+    candidates = []
+    seen_ips = {}  # ip -> lowest hop_index already emitted, for dedup
+
+    for hop in chain:
+        ip = hop.get("from_ip")
+        if not ip:
+            continue
+
+        hop_index = hop.get("hop_index")
+        excluded = False
+        exclusion_reason = None
+
+        if hop.get("is_private_ip"):
+            excluded = True
+            exclusion_reason = "RFC1918 private address, not externally routable"
+        elif ip in seen_ips:
+            excluded = True
+            exclusion_reason = f"Duplicate of IP already observed at hop {seen_ips[ip]}"
+
+        tier = _classify_tier(hop, hop_index)
+        base = TIER_BASE_SCORE[tier]
+        trust_score = _adjust_score(base, hop, auth)
+
+        by_host = hop.get("by_host")
+        observed_by_is_trusted = is_trusted_receiver(by_host)
+
+        candidates.append({
+            "ip": ip,
+            "hop_index": hop_index,
+            "trust_tier": tier,
+            "trust_score": trust_score,
+            "observed_by": by_host,
+            "observed_by_is_trusted_receiver": observed_by_is_trusted,
+            "reasons": _reasons_for(tier, hop, ip, excluded, exclusion_reason),
+            "excluded": excluded,
+            "exclusion_reason": exclusion_reason,
+        })
+
+        if ip not in seen_ips:
+            seen_ips[ip] = hop_index
+
+    candidates.sort(key=lambda c: (c["excluded"], -c["trust_score"], c["hop_index"]))
+    return candidates
