@@ -12,7 +12,7 @@ from __future__ import annotations
 from ..core.config import TRUSTED_RECEIVER_DOMAINS  # noqa: F401  (used once implemented)
 from .geoip import _empty_geo, classify_infrastructure, lookup_ip
 
-IS_STUB = True   # <-- M3: set False when build_origin is implemented
+IS_STUB = False  # <-- M3: set False when build_origin is implemented
 
 # Verbatim from API_CONTRACT.md section 6.  Do not reword.
 STATEMENT_TEMPLATE = (
@@ -31,90 +31,199 @@ CONFIDENCE_CAPPED_INFRA = {"vpn", "tor", "hosting", "webmail_provider"}
 
 
 def format_location(geo: dict) -> str:
-    """'Singapore, SG' / 'Frankfurt, DE' / 'Germany' / 'an undetermined location'.
+    """'Singapore, SG' / 'Frankfurt, DE' / 'Germany' / 'an undetermined location'."""
+    
+    city = geo.get("city")
+    country_code = geo.get("country_code")
+    country = geo.get("country")
 
-    TODO(M3): prefer 'city, country_code'; fall back to country; fall back to
-    the literal string 'an undetermined location' (it reads correctly inside
-    STATEMENT_TEMPLATE, which is why it is worded that way).
-    """
+    if city and country_code:
+        return f"{city}, {country_code}"
+
+    if country:
+        return country
+
     return "an undetermined location"
 
 
 def assess_confidence(candidate: dict, geo: dict, auth: dict,
                       chain_integrity: dict) -> tuple[str, list[str]]:
-    """-> ("high"|"medium"|"low", [human-readable reasons])
+    level = "high"
+    reasons = []
 
-    TODO(M3) - implement as start-high-then-demote, it is much easier to reason
-    about and to explain to a judge than accumulating points:
+    infra = classify_infrastructure(geo, candidate.get("observed_by"))
 
-      start: level = "high", reasons = []
+    # Medium confidence
+    if candidate.get("trust_tier") == "transit_relay":
+        level = "medium"
+        reasons.append(
+            "The IP was observed through a transit relay, which provides weaker evidence of the sender's original connection."
+        )
 
-      demote to "medium" and append a reason when ANY of:
-        candidate["trust_tier"] == "transit_relay"
-        geo["is_datacenter"] or classify_infrastructure(...) == "hosting"
-        auth spf and dkim are both not "pass"
-        chain_integrity["gaps_suspected"]
-        geo["lookup_source"] in {"geolite2", "cache"}   (weaker infra signals)
+    if geo.get("is_datacenter") or infra == "hosting":
+        level = "medium"
+        reasons.append(
+            "Address belongs to datacenter/hosting infrastructure, which obscures the operator's own connection."
+        )
 
-      demote to "low" and append a reason when ANY of:
-        candidate["trust_tier"] in {"client_asserted", "unverifiable"}
-        infrastructure_type in {"vpn", "tor"}
-        infrastructure_type == "webmail_provider"
-        geo["is_proxy"]
-        geo["lookup_source"] == "unavailable"
-        chain_integrity["malformed_hops"] > 0
-        chain_integrity["backward_time_jumps"] > 0
-        auth["self_asserted_only"]
+    spf_result = auth.get("spf", {}).get("result")
+    dkim_result = auth.get("dkim", {}).get("result")
 
-      promote NEVER.  Only demote.
+    if spf_result != "pass" and dkim_result != "pass":
+        level = "medium"
+        reasons.append(
+            "Neither SPF nor DKIM authentication passed, reducing confidence in the observed sending path."
+        )
 
-      If level is still "high", append the positive reason
-      "IP was observed and recorded by a trusted receiving provider".
+    if chain_integrity.get("gaps_suspected"):
+        level = "medium"
+        reasons.append(
+            "Gaps were detected in the message delivery chain, reducing confidence in the observed path."
+        )
 
-    Write the reasons the way an analyst writes a case note - full sentences,
-    no jargon, because they are printed verbatim in the forensic PDF:
-      GOOD: "Address belongs to datacenter/hosting infrastructure, which
-             obscures the operator's own connection."
-      BAD:  "is_datacenter=True"
+    if geo.get("lookup_source") in {"geolite2", "cache"}:
+        level = "medium"
+        reasons.append(
+            "Location data came from a source with weaker infrastructure signals."
+        )
 
-    Always return at least one reason.  A confidence label with no stated
-    justification is exactly the thing this project exists to avoid.
-    """
-    return "low", ["Confidence model not yet implemented (stub)."]
+    # Low confidence
+    if candidate.get("trust_tier") in {"client_asserted", "unverifiable"}:
+        level = "low"
+        reasons.append(
+            "The IP is client-asserted or could not be independently verified."
+        )
+
+    if infra in {"vpn", "tor"}:
+        level = "low"
+        reasons.append(
+            "The address belongs to VPN or Tor infrastructure, which obscures the original connection."
+        )
+
+    if infra == "webmail_provider":
+        level = "low"
+        reasons.append(
+            "The address belongs to webmail infrastructure rather than a verified sender connection."
+        )
+
+    if geo.get("is_proxy"):
+        level = "low"
+        reasons.append(
+            "The address is identified as a proxy, obscuring the original connection."
+        )
+
+    if chain_integrity.get("malformed_hops", 0) > 0:
+        level = "low"
+        reasons.append(
+            "Malformed hops were detected in the delivery chain."
+        )
+
+    if chain_integrity.get("backward_time_jumps", 0) > 0:
+        level = "low"
+        reasons.append(
+            "Backward timestamp jumps were detected in the delivery chain."
+        )
+
+    if auth.get("self_asserted_only"):
+        level = "low"
+        reasons.append(
+            "Authentication evidence is self-asserted and was not independently confirmed."
+        )
+
+    if level == "high":
+        reasons.append(
+            "IP was observed and recorded by a trusted receiving provider"
+        )
+
+    return level, reasons
 
 
 def build_origin(candidates: list[dict], auth: dict, chain_integrity: dict,
                  skip_geoip: bool = False) -> tuple[dict, list[dict]]:
-    """MAIN ENTRY POINT.  -> (response["origin"], response["map_hops"])
+    """Build the origin result and map hops."""
 
-    TODO(M3) implementation order:
-      1. usable = [c for c in candidates if not c["excluded"]]
-         if not usable  ->  return the no-origin origin (geo=_empty_geo(),
-         confidence="low", statement=NO_ORIGIN_STATEMENT, reasons explaining
-         why) and map_hops=[].   TEST THIS PATH FIRST - webmail-pasted emails
-         hit it constantly and it must not crash the demo.
-      2. best = usable[0]        # M2 guarantees the sort order; do not re-sort
-      3. geo = _empty_geo() if skip_geoip else lookup_ip(best["ip"])
-      4. infra = classify_infrastructure(geo, best.get("observed_by"))
-      5. confidence, reasons = assess_confidence(best, geo, auth, chain_integrity)
-      6. statement = STATEMENT_TEMPLATE.format(location=format_location(geo),
-                                               confidence=confidence)
-      7. map_hops: geolocate up to the top 5 usable candidates (they are cached,
-         so this is cheap) and emit one entry per candidate that has lat AND
-         lon.  Mark best's entry is_selected_origin=True.  Every entry carries
-         its own confidence label - the contract forbids an unlabelled pin.
-         Skip entirely when skip_geoip is True.
+    usable = [c for c in candidates if not c.get("excluded", False)]
 
-    Guarantees you must uphold:  confidence is never None and never outside the
-    enum; statement is never empty.
-    """
+    # No usable candidates
+    if not usable:
+        origin = {
+            "selected_ip": None,
+            "selected_from_hop": None,
+            "geo": _empty_geo(),
+            "infrastructure_type": "unknown",
+            "confidence": "low",
+            "confidence_reasons": [
+                "No externally observed sending IP could be recovered from this message's headers."
+            ],
+            "statement": NO_ORIGIN_STATEMENT,
+        }
+        return origin, []
+
+    # M2 already sorts candidates by trust/quality.
+    best = usable[0]
+
+    # Geolocation
+    geo = _empty_geo() if skip_geoip else lookup_ip(best["ip"])
+
+    # Infrastructure classification
+    infra = classify_infrastructure(
+        geo,
+        best.get("observed_by"),
+    )
+
+    # Confidence
+    confidence, reasons = assess_confidence(
+        best,
+        geo,
+        auth,
+        chain_integrity,
+    )
+
+    # Human-readable statement
+    statement = STATEMENT_TEMPLATE.format(
+        location=format_location(geo),
+        confidence=confidence,
+    )
+
     origin = {
-        "selected_ip": None,
-        "selected_from_hop": None,
-        "geo": _empty_geo(),
-        "infrastructure_type": "unknown",
-        "confidence": "low",
-        "confidence_reasons": ["Origin module not yet implemented (stub)."],
-        "statement": NO_ORIGIN_STATEMENT,
+        "selected_ip": best.get("ip"),
+        "selected_from_hop": best.get("observed_by"),
+        "geo": geo,
+        "infrastructure_type": infra,
+        "confidence": confidence,
+        "confidence_reasons": reasons,
+        "statement": statement,
     }
-    return origin, []
+
+    map_hops = []
+
+    # GeoIP can be disabled for tests/offline mode.
+    if not skip_geoip:
+        for candidate in usable[:5]:
+            candidate_geo = lookup_ip(candidate["ip"])
+
+            if candidate_geo.get("lat") is None or candidate_geo.get("lon") is None:
+                continue
+
+            candidate_infra = classify_infrastructure(
+                candidate_geo,
+                candidate.get("observed_by"),
+            )
+
+            candidate_confidence, _ = assess_confidence(
+                candidate,
+                candidate_geo,
+                auth,
+                chain_integrity,
+            )
+
+            map_hops.append({
+                "ip": candidate.get("ip"),
+                "lat": candidate_geo["lat"],
+                "lon": candidate_geo["lon"],
+                "is_selected_origin": candidate.get("ip") == best.get("ip"),
+                "confidence": candidate_confidence,
+                "infrastructure_type": candidate_infra,
+            })
+
+    return origin, map_hops

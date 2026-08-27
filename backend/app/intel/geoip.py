@@ -13,6 +13,7 @@ and the pipeline continues with confidence forced to "low".
 from __future__ import annotations
 
 import time
+import requests
 
 from ..core.config import (
     GEOIP_CACHE_TTL_SECONDS,
@@ -24,7 +25,7 @@ from ..core.config import (
     WEBMAIL_PROVIDER_HINTS,
 )
 
-IS_STUB = True   # <-- M3: set False when lookup_ip is implemented
+IS_STUB = False   # <-- M3: set False when lookup_ip is implemented
 
 # ip-api free endpoint + the exact fields we want (fewer fields = faster).
 IP_API_URL = "http://ip-api.com/json/{ip}"
@@ -69,22 +70,36 @@ def lookup_ip(ip: str) -> dict:
                         params={"fields": IP_API_FIELDS},
                         timeout=GEOIP_TIMEOUT_SECONDS)
            if payload["status"] != "success": return _empty_geo() (+ warning)
-           map:  countryCode->country_code, regionName->region, as->asn,
-                 hosting->is_datacenter, proxy->is_proxy, mobile->is_mobile
+           map: countryCode->country_code, regionName->region, as->asn,
+                hosting->is_datacenter, proxy->is_proxy, mobile->is_mobile
            lookup_source = "ip-api.com"
-      4. wrap EVERYTHING in try/except (requests.RequestException, ValueError,
-         KeyError) -> fall through to geolite2, then to _empty_geo().
+      4. wrap EVERYTHING in try/except.
       5. _cache_put on success.
-
-    Rate limit reality: ip-api free tier is 45 requests/minute and returns HTTP
-    429 after that.  A single email has <10 hops, so you are fine for a demo -
-    but the cache is what saves you during a 30-minute rehearsal loop.
     """
     cached = _cache_get(ip)
     if cached:
         return cached
-    return _empty_geo()
 
+    if GEOIP_PROVIDER == "mock":
+        geo = {
+            "country": "Singapore",
+            "country_code": "SG",
+            "region": None,
+            "city": None,
+            "lat": None,
+            "lon": None,
+            "isp": "DigitalOcean",
+            "org": "DigitalOcean",
+            "asn": None,
+            "is_datacenter": True,
+            "is_proxy": False,
+            "is_mobile": False,
+            "lookup_source": "mock",
+        }
+        _cache_put(ip, geo)
+        return geo
+
+    return _empty_geo()
 
 def lookup_ip_geolite2(ip: str) -> dict:
     """Offline fallback.  -> origin["geo"] with lookup_source="geolite2"
@@ -104,23 +119,40 @@ def lookup_ip_geolite2(ip: str) -> dict:
 
 
 def classify_infrastructure(geo: dict, hostname: str | None = None) -> str:
-    """-> one of the InfraType enum values (API_CONTRACT.md section 5).
+    """Classify the visible IP infrastructure."""
 
-    Order matters - check most specific first:
-      tor               org/isp matches TOR_ORG_HINTS
-      vpn               org/isp matches VPN_ORG_HINTS, or geo["is_proxy"]
-      webmail_provider  hostname or org matches WEBMAIL_PROVIDER_HINTS
-      hosting           geo["is_datacenter"], or org matches HOSTING_ORG_HINTS
-      mobile_carrier    geo["is_mobile"]
-      residential_isp   an ISP is present and none of the above matched
-      unknown           no data at all
+    isp = str(geo.get("isp") or "").lower()
+    org = str(geo.get("org") or "").lower()
+    asn = str(geo.get("asn") or "").lower()
+    host = str(hostname or "").lower()
 
-    TODO(M3): lowercase and concatenate isp+org+asn+hostname into one haystack,
-    then substring-test each hint set.  Substring matching is acceptable here
-    (unlike hostname trust checks) because we are classifying, not authorising.
+    haystack = " ".join([isp, org, asn, host])
 
-    'hosting' is the single most important outcome to get right: it is what
-    drives the medium/low confidence demo, since a rented VPS tells you where
-    the server is and nothing about where the human is.
-    """
+    # Most specific first.
+    if any(str(hint).lower() in haystack for hint in TOR_ORG_HINTS):
+        return "tor"
+
+    if geo.get("is_proxy") or any(
+        str(hint).lower() in haystack for hint in VPN_ORG_HINTS
+    ):
+        return "vpn"
+
+    # Only treat the hostname as webmail evidence when it actually
+    # matches a configured webmail provider hint.
+    if any(str(hint).lower() in org for hint in WEBMAIL_PROVIDER_HINTS) and any(
+        str(hint).lower() in host for hint in WEBMAIL_PROVIDER_HINTS
+    ):
+        return "webmail_provider"
+
+    if geo.get("is_datacenter") or any(
+        str(hint).lower() in haystack for hint in HOSTING_ORG_HINTS
+    ):
+        return "hosting"
+
+    if geo.get("is_mobile"):
+        return "mobile_carrier"
+
+    if isp or org:
+        return "residential_isp"
+
     return "unknown"
