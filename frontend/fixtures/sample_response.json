@@ -1,0 +1,199 @@
+{
+  "analysis_id": "efa-9f8a2b-2026",
+  "warnings": [
+    "ip-api.com rate limit reached; fell back to GeoLite2"
+  ],
+  "headers": {
+    "subject": "Your account will be suspended within 24 hours — Action Required",
+    "from": {
+      "display_name": "PayPal Service",
+      "address": "service@paypa1-secure.tld"
+    },
+    "to": "accounting@target-corp.com",
+    "date": "2026-08-27T09:00:00Z",
+    "message_id": "<20260827090001.99312.qmail@mail.evil.tld>"
+  },
+  "risk": {
+    "score": 85,
+    "band": "critical",
+    "verdict": "likely_phishing",
+    "signals": [
+      {
+        "name": "SPF/DKIM/DMARC failure",
+        "points": 30,
+        "triggered": true,
+        "evidence": "spf=fail (domain paypa1-secure.tld), dmarc=fail (p=reject)"
+      },
+      {
+        "name": "Datacenter / proxy / hosting infrastructure",
+        "points": 25,
+        "triggered": true,
+        "evidence": "AS14061 DigitalOcean, LLC (Singapore datacenter)"
+      },
+      {
+        "name": "Reply-To domain != From domain",
+        "points": 20,
+        "triggered": true,
+        "evidence": "Reply-To: billing-support@dropmail.ru vs From: service@paypa1-secure.tld"
+      },
+      {
+        "name": "Broken or backward Received chain",
+        "points": 0,
+        "triggered": false,
+        "evidence": "not triggered"
+      },
+      {
+        "name": "Suspicious urgency language",
+        "points": 10,
+        "triggered": true,
+        "evidence": "Phrases detected: 'account will be suspended', 'within 24 hours', 'immediate action'"
+      }
+    ]
+  },
+  "authentication": {
+    "verified_by": "mx.google.com",
+    "self_asserted_only": false,
+    "alignment": {
+      "spf_aligned": false,
+      "dkim_aligned": false,
+      "from_matches_return_path": false
+    },
+    "spf": {
+      "result": "fail",
+      "domain": "paypa1-secure.tld",
+      "raw": "Received-SPF: fail (google.com: domain of service@paypa1-secure.tld does not designate 203.0.113.9 as permitted sender) client-ip=203.0.113.9;"
+    },
+    "dkim": {
+      "result": "none",
+      "domain": null,
+      "selector": null,
+      "raw": null
+    },
+    "dmarc": {
+      "result": "fail",
+      "domain": "paypa1-secure.tld",
+      "policy": "reject",
+      "raw": "Authentication-Results: mx.google.com; dmarc=fail (p=REJECT sp=REJECT) header.from=paypa1-secure.tld"
+    },
+    "arc": {
+      "result": "none",
+      "raw": null
+    }
+  },
+  "origin": {
+    "selected_ip": "203.0.113.9",
+    "selected_from_hop": 1,
+    "confidence": "medium",
+    "confidence_reasons": [
+      "IP was observed by a trusted receiving provider (mx.google.com)",
+      "Address belongs to datacenter/hosting infrastructure (DigitalOcean, LLC)",
+      "SPF and DKIM did not pass, so the sending domain cannot authenticate origin authenticity"
+    ],
+    "statement": "Observed sending infrastructure is geolocated to Singapore, SG. This represents visible email-delivery infrastructure, not a verified physical location of the sender. Confidence: medium.",
+    "isp": "DigitalOcean, LLC",
+    "asn": 14061,
+    "infrastructure_type": "hosting / datacenter",
+    "is_datacenter": true,
+    "is_proxy": false,
+    "is_mobile": false,
+    "geo": {
+      "city": "Singapore",
+      "region": "Central Singapore",
+      "country": "Singapore",
+      "country_code": "SG",
+      "lat": 1.3521,
+      "lon": 103.8198
+    }
+  },
+  "map_hops": [
+    {
+      "hop_index": 1,
+      "ip": "203.0.113.9",
+      "city": "Singapore",
+      "country": "Singapore",
+      "lat": 1.3521,
+      "lon": 103.8198,
+      "confidence": "medium"
+    },
+    {
+      "hop_index": 2,
+      "ip": "209.85.220.41",
+      "city": "Mountain View",
+      "country": "United States",
+      "lat": 37.4056,
+      "lon": -122.0775,
+      "confidence": "high"
+    }
+  ],
+  "received_chain": [
+    {
+      "hop_index": 1,
+      "from_host": "mail.evil.tld",
+      "from_ip": "203.0.113.9",
+      "by_host": "mx.google.com",
+      "protocol": "ESMTPS",
+      "tls": true,
+      "timestamp": "2026-08-27 09:00:01 UTC",
+      "is_private_ip": false,
+      "parse_ok": true
+    },
+    {
+      "hop_index": 2,
+      "from_host": "mail-sor-f41.google.com",
+      "from_ip": "209.85.220.41",
+      "by_host": "inbox.target-corp.com",
+      "protocol": "SMTP",
+      "tls": true,
+      "timestamp": "2026-08-27 09:00:03 UTC",
+      "is_private_ip": false,
+      "parse_ok": true
+    },
+    {
+      "hop_index": 3,
+      "from_host": "internal-relay.corp",
+      "from_ip": "10.20.30.40",
+      "by_host": "client-exchange.internal",
+      "protocol": "HTTP",
+      "tls": false,
+      "timestamp": "2026-08-27 09:00:04 UTC",
+      "is_private_ip": true,
+      "parse_ok": true
+    }
+  ],
+  "ip_candidates": [
+    {
+      "ip": "203.0.113.9",
+      "hop_index": 1,
+      "is_excluded": false,
+      "score": 95
+    },
+    {
+      "ip": "209.85.220.41",
+      "hop_index": 2,
+      "is_excluded": false,
+      "score": 70
+    },
+    {
+      "ip": "10.20.30.40",
+      "hop_index": 3,
+      "is_excluded": true,
+      "exclusion_reason": "RFC1918 private address, not externally routable"
+    }
+  ],
+  "chain_integrity": {
+    "hop_count": 3,
+    "chronological_order": true,
+    "backward_jumps": 0,
+    "largest_gap_seconds": 2,
+    "notes": [
+      "Chain topology consistent with standard internet mail delivery",
+      "Hop 3 private IP safely discarded from geolocation targeting"
+    ]
+  },
+  "report": {
+    "report_id": "rep-efa-20260827-01",
+    "evidence_sha256": "4adf0baedaf7f360bc9377e39df38326a385d3f78082b3858517a15d842a9f7d",
+    "custody_log_entry": 17,
+    "previous_entry_hash": "9b3c4412ec0913847aaef1240984bafe495813d9028471badefa2093847aa102"
+  }
+}
