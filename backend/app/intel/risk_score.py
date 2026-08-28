@@ -15,7 +15,7 @@ failed.
 """
 from __future__ import annotations
 
-IS_STUB = True   # <-- M3: set False when score_risk is implemented
+IS_STUB = False  # <-- M3: set False when score_risk is implemented
 
 # Fixed order + weights.  Changing a weight is fine (tune against samples);
 # changing a CODE is a contract change - see API_CONTRACT.md section 8.
@@ -97,12 +97,74 @@ def score_risk(headers: dict, auth: dict, origin: dict,
 
     Never raise.  Missing input -> that signal is simply not triggered.
     """
+    signals_output = []
+    total_score = 0
+    
+    # 1. AUTH_FAIL
+    spf = auth.get("spf", {}).get("result", "none")
+    dkim = auth.get("dkim", {}).get("result", "none")
+    dmarc = auth.get("dmarc", {}).get("result", "none")
+    self_asserted = auth.get("self_asserted_only", False)
+    auth_triggered = (dmarc == "fail") or (spf in {"fail", "softfail"}) or self_asserted
+    auth_ev = f"spf={spf}, dkim={dkim}, dmarc={dmarc}" + (" (self-asserted only)" if self_asserted else "") if auth_triggered else None
+
+    # 2. INFRA_FLAGGED
+    infra_type = origin.get("infrastructure_type", "unknown")
+    geo = origin.get("geo", {})
+    infra_triggered = (infra_type in {"vpn", "tor", "hosting"}) or geo.get("is_proxy") or geo.get("is_datacenter")
+    infra_ev = f"{geo.get('asn', '')} {geo.get('org', '')} - {infra_type}".strip() if infra_triggered else None
+
+    # 3. REPLYTO_MISMATCH 
+    mismatch_triggered = False
+    mismatch_ev = None
+    for anomaly in headers.get("anomalies", []):
+        if anomaly.get("code") in {"REPLYTO_DOMAIN_MISMATCH", "RETURNPATH_DOMAIN_MISMATCH"}:
+            mismatch_triggered = True
+            mismatch_ev = anomaly.get("detail")
+            break
+
+    # 4. CHAIN_ANOMALY
+    chain_issues = []
+    if chain_integrity.get("backward_time_jumps", 0) > 0: chain_issues.append("backward time jumps")
+    if chain_integrity.get("malformed_hops", 0) > 0: chain_issues.append("malformed hops")
+    if chain_integrity.get("gaps_suspected"): chain_issues.append("gaps suspected")
+    if chain_integrity.get("hop_count", 0) == 0: chain_issues.append("hop_count == 0")
+    chain_triggered = len(chain_issues) > 0
+    chain_ev = ", ".join(chain_issues) if chain_triggered else None
+
+    # 5. URGENCY_KEYWORDS
+    subject_and_body = (headers.get("subject", "") + " " + body_text).lower()
+    found = [kw for kw in URGENCY_KEYWORDS if kw in subject_and_body]
+    urgency_triggered = len(found) >= 2
+    urgency_ev = f"matched: {', '.join([repr(k) for k in found])}" if urgency_triggered else None
+
+    # Map to SIGNAL_DEFS to preserve the fixed order and weights
+    evals = [
+        (auth_triggered, auth_ev), 
+        (infra_triggered, infra_ev), 
+        (mismatch_triggered, mismatch_ev), 
+        (chain_triggered, chain_ev), 
+        (urgency_triggered, urgency_ev)
+    ]
+    
+    for i, (code, label, points) in enumerate(SIGNAL_DEFS):
+        trig, ev = evals[i]
+        if trig:
+            total_score += points
+        signals_output.append({
+            "code": code, 
+            "label": label, 
+            "points": points, 
+            "triggered": trig, 
+            "evidence": ev
+        })
+
+    final_score = max(0, min(total_score, 100))
+    band = band_for(final_score)
+
     return {
-        "score": 0,
-        "band": "low",
-        "verdict": "inconclusive",
-        "signals": [
-            {"code": c, "label": l, "points": p, "triggered": False, "evidence": None}
-            for c, l, p in SIGNAL_DEFS
-        ],
+        "score": final_score,
+        "band": band,
+        "verdict": VERDICT_BY_BAND[band],
+        "signals": signals_output
     }
