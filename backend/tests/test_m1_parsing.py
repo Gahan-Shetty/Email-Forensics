@@ -10,11 +10,10 @@ import pytest
 
 from backend.app.parsing import header_parser, received_chain
 
-stub = pytest.mark.skipif(header_parser.IS_STUB, reason="M1 module still a stub")
-stub_chain = pytest.mark.skipif(received_chain.IS_STUB, reason="M1 chain still a stub")
 
 
-@stub
+
+
 def test_from_header_parsed(sample_phish):
     h = header_parser.parse_headers(sample_phish)
     assert h["from"]["address"] == "service@paypa1-secure.tld"
@@ -22,19 +21,19 @@ def test_from_header_parsed(sample_phish):
     assert h["from"]["display_name"] == "PayPal Service"
 
 
-@stub
+
 def test_replyto_mismatch_anomaly_emitted(sample_phish):
     codes = {a["code"] for a in header_parser.parse_headers(sample_phish)["anomalies"]}
     assert "REPLYTO_DOMAIN_MISMATCH" in codes
 
 
-@stub
+
 def test_date_is_iso_utc(sample_phish):
     d = header_parser.parse_headers(sample_phish)["date"]
     assert d and d.endswith("Z")
 
 
-@stub_chain
+
 def test_hop_one_is_closest_to_sender(sample_phish):
     """THE critical test. hop 1 must be the ORIGINATING server, not Google's."""
     chain = received_chain.parse_received_chain(sample_phish)
@@ -43,7 +42,7 @@ def test_hop_one_is_closest_to_sender(sample_phish):
     assert chain[0]["from_host"] == "mail.paypa1-secure.tld"
 
 
-@stub_chain
+
 def test_private_ip_detection():
     assert received_chain.is_private_ip("10.20.30.40")
     assert received_chain.is_private_ip("127.0.0.1")
@@ -53,7 +52,7 @@ def test_private_ip_detection():
     assert received_chain.is_private_ip("not-an-ip")     # fail closed
 
 
-@stub_chain
+
 def test_backward_timestamps_detected(samples):
     chain = received_chain.parse_received_chain(samples["05_broken_chain_backward_timestamps"])
     integrity = received_chain.assess_chain_integrity(chain)
@@ -61,6 +60,6 @@ def test_backward_timestamps_detected(samples):
     assert not integrity["timestamps_monotonic"]
 
 
-@stub_chain
+
 def test_no_received_headers_returns_empty(samples):
     assert received_chain.parse_received_chain(samples["06_minimal_no_headers"]) == []
