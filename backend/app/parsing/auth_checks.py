@@ -17,7 +17,7 @@ import re
 from email import message_from_string
 from email.utils import parseaddr
 
-from app.core.config import TRUSTED_RECEIVER_DOMAINS
+from ..core.config import TRUSTED_RECEIVER_DOMAINS
 
 IS_STUB = False
 
@@ -200,6 +200,8 @@ def evaluate_authentication(raw_email: str, headers: dict) -> dict:
         "spf": {
             "result": spf_result,
             "domain": spf_domain,
+            "selector": None,      # SPF has no selector concept; present for uniform shape
+            "policy": None,        # SPF has no policy concept; present for uniform shape
             "raw": spf_raw,
             "source": spf_source,
         },
@@ -207,18 +209,25 @@ def evaluate_authentication(raw_email: str, headers: dict) -> dict:
             "result": dkim_result,
             "domain": dkim_domain,
             "selector": dkim_selector,
+            "policy": None,        # DKIM has no policy concept; present for uniform shape
             "raw": dkim_raw,
             "source": dkim_source,
         },
         "dmarc": {
             "result": dmarc_result,
+            "domain": None,        # DMARC's "domain" is the From-domain, already in headers.from.domain
+            "selector": None,      # DMARC has no selector concept; present for uniform shape
             "policy": dmarc_policy,
             "raw": dmarc_raw,
             "source": dmarc_source,
         },
         "arc": {
             "result": arc_result,
+            "domain": None,        # not extracted for MVP ARC (best-effort mechanism)
+            "selector": None,
+            "policy": None,
             "raw": arc_raw,
+            "source": "ARC-Authentication-Results" if arc_raw else None,
         },
         "alignment": {
             "spf_aligned": spf_aligned,

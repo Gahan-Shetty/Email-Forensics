@@ -13,7 +13,7 @@ API_CONTRACT.md shape, standing in for M1's output.
 
 import pytest
 
-from app.parsing.auth_checks import evaluate_authentication
+from app.parsing.auth_checks import evaluate_authentication, VALID_RESULTS
 from app.parsing.ip_ranking import rank_ip_candidates, is_trusted_receiver
 
 
@@ -332,6 +332,25 @@ class TestEvaluateAuthentication:
         assert auth["dkim"]["result"] == "none"
         assert auth["dkim"]["domain"] == "evil.example"  # claimed domain surfaced for context
         assert auth["dkim"]["selector"] == "sel1"
+
+    def test_mechanism_objects_have_full_uniform_key_set(self):
+        """Contract requires every mechanism (spf, dkim, dmarc, arc) to carry
+        the same full key set (result, domain, selector, policy, raw, source),
+        using None where a field doesn't apply to that mechanism — rather than
+        each mechanism exposing a different subset of keys."""
+        required_keys = {"result", "domain", "selector", "policy", "raw", "source"}
+        auth = evaluate_authentication(RAW_01, HEADERS_01)
+        for mech in ("spf", "dkim", "dmarc", "arc"):
+            assert required_keys.issubset(auth[mech].keys()), f"{mech} missing keys: {required_keys - auth[mech].keys()}"
+
+    def test_mechanism_objects_full_key_set_even_when_empty(self):
+        """Same check on sample 06, where almost everything is absent —
+        keys must still all be present, values None rather than missing."""
+        required_keys = {"result", "domain", "selector", "policy", "raw", "source"}
+        auth = evaluate_authentication(RAW_06, HEADERS_06)
+        for mech in ("spf", "dkim", "dmarc", "arc"):
+            assert required_keys.issubset(auth[mech].keys())
+            assert auth[mech]["result"] in VALID_RESULTS or auth[mech]["result"] == "none"
 
     def test_received_spf_fallback_when_no_ar_spf(self):
         raw = (

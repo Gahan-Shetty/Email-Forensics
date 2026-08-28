@@ -12,7 +12,7 @@ actual TCP source address. So an IP is exactly as trustworthy as the server
 that recorded it.
 """
 
-from app.core.config import TRUSTED_RECEIVER_DOMAINS
+from ..core.config import TRUSTED_RECEIVER_DOMAINS
 
 IS_STUB = False
 
