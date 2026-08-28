@@ -58,24 +58,7 @@ def _cache_put(ip: str, geo: dict) -> None:
 
 
 def lookup_ip(ip: str) -> dict:
-    """MAIN ENTRY POINT.  -> origin["geo"]
-
-    TODO(M3) implementation order:
-      1. cache check first  (_cache_get)
-      2. if GEOIP_PROVIDER == "mock": return a fixed Singapore/DigitalOcean geo.
-         Build this FIRST - it unblocks your confidence + scoring work and makes
-         your unit tests deterministic and offline.
-      3. ip-api path:
-           requests.get(IP_API_URL.format(ip=ip),
-                        params={"fields": IP_API_FIELDS},
-                        timeout=GEOIP_TIMEOUT_SECONDS)
-           if payload["status"] != "success": return _empty_geo() (+ warning)
-           map: countryCode->country_code, regionName->region, as->asn,
-                hosting->is_datacenter, proxy->is_proxy, mobile->is_mobile
-           lookup_source = "ip-api.com"
-      4. wrap EVERYTHING in try/except.
-      5. _cache_put on success.
-    """
+    """MAIN ENTRY POINT.  -> origin["geo"]"""
     cached = _cache_get(ip)
     if cached:
         return cached
@@ -99,7 +82,41 @@ def lookup_ip(ip: str) -> dict:
         _cache_put(ip, geo)
         return geo
 
-    return _empty_geo()
+    # ACTUAL IMPLEMENTATION: Replaces the unconditional 'return _empty_geo()'
+    try:
+        response = requests.get(
+            IP_API_URL.format(ip=ip),
+            params={"fields": IP_API_FIELDS},
+            timeout=GEOIP_TIMEOUT_SECONDS
+        )
+        response.raise_for_status()
+        payload = response.json()
+
+        if payload.get("status") != "success":
+            return _empty_geo()
+
+        # Map the ip-api fields to our internal contract
+        geo = {
+            "country": payload.get("country"),
+            "country_code": payload.get("countryCode"),
+            "region": payload.get("regionName"),
+            "city": payload.get("city"),
+            "lat": payload.get("lat"),
+            "lon": payload.get("lon"),
+            "isp": payload.get("isp"),
+            "org": payload.get("org"),
+            "asn": payload.get("as"),
+            "is_datacenter": bool(payload.get("hosting")),
+            "is_proxy": bool(payload.get("proxy")),
+            "is_mobile": bool(payload.get("mobile")),
+            "lookup_source": "ip-api.com",
+        }
+        _cache_put(ip, geo)
+        return geo
+
+    except Exception:
+        # Fallback for timeouts, network disconnects, or API limit errors
+        return _empty_geo()
 
 def lookup_ip_geolite2(ip: str) -> dict:
     """Offline fallback.  -> origin["geo"] with lookup_source="geolite2"

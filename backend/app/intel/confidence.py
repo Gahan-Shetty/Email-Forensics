@@ -187,7 +187,7 @@ def build_origin(candidates: list[dict], auth: dict, chain_integrity: dict,
 
     origin = {
         "selected_ip": best.get("ip"),
-        "selected_from_hop": best.get("observed_by"),
+        "selected_from_hop": best.get("hop_index"),
         "geo": geo,
         "infrastructure_type": infra,
         "confidence": confidence,
