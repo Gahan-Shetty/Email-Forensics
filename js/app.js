@@ -108,27 +108,29 @@
     }
 
     function handleFile(file) {
+      if (!file) return;
       var reader = new FileReader();
       reader.onload = function (e) {
         var content = e.target.result;
         if (rawTextarea) {
           rawTextarea.value = content;
-          switchTab("raw");
-          triggerAnalysis();
         }
+        triggerAnalysis(null, file);
       };
       reader.readAsText(file);
     }
 
     // 7. Execution Trigger (Analyze / Demo)
-    function triggerAnalysis(forcePresetKey) {
+    function triggerAnalysis(forcePresetKey, fileObj) {
       var rawEmail = rawTextarea ? rawTextarea.value : "";
       var isOffline = offlineCheckbox ? offlineCheckbox.checked : false;
-      var presetKey = forcePresetKey || (sampleSelect ? sampleSelect.value : null);
+      var presetKey = forcePresetKey || (sampleSelect && !rawEmail && !fileObj ? sampleSelect.value : null);
 
       setLoadingState(true);
 
-      window.EFR.api.analyze(rawEmail, {
+      var inputPayload = fileObj || rawEmail;
+
+      window.EFR.api.analyze(inputPayload, {
         offlineMode: isOffline,
         sampleKey: presetKey
       })

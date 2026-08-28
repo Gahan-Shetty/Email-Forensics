@@ -193,9 +193,10 @@
 
     var spfAlignGlyph = align.spf_aligned ? '✓' : '✕';
     var dkimAlignGlyph = align.dkim_aligned ? '✓' : '✕';
-    var fromReturnMatchGlyph = (align.from_matches_return_path !== undefined)
-      ? (align.from_matches_return_path ? '✓' : '✕')
-      : '—';
+    var fromReturnMatch = (align.from_vs_returnpath_match !== undefined)
+      ? align.from_vs_returnpath_match
+      : (align.from_matches_return_path !== undefined ? align.from_matches_return_path : null);
+    var fromReturnMatchGlyph = (fromReturnMatch !== null) ? (fromReturnMatch ? '✓' : '✕') : '—';
 
     var rawDetails = '';
     if (auth.spf && auth.spf.raw || auth.dkim && auth.dkim.raw || auth.dmarc && auth.dmarc.raw) {
@@ -270,12 +271,18 @@
       : ''; // Hide map cleanly when selected_ip === null (Sample 06 / webmail)
 
     var tagsHtml = '';
-    if (origin.isp) tagsHtml += '<span class="origin-tag">' + esc(origin.isp) + '</span>';
-    if (origin.asn) tagsHtml += '<span class="origin-tag">AS' + esc(origin.asn) + '</span>';
+    var isp = geo.isp || origin.isp || null;
+    var asn = geo.asn || origin.asn || null;
+    var isDatacenter = (geo.is_datacenter !== undefined) ? geo.is_datacenter : origin.is_datacenter;
+    var isProxy = (geo.is_proxy !== undefined) ? geo.is_proxy : origin.is_proxy;
+    var isMobile = (geo.is_mobile !== undefined) ? geo.is_mobile : origin.is_mobile;
+
+    if (isp) tagsHtml += '<span class="origin-tag">' + esc(isp) + '</span>';
+    if (asn) tagsHtml += '<span class="origin-tag">' + (String(asn).startsWith("AS") ? esc(asn) : ("AS" + esc(asn))) + '</span>';
     if (origin.infrastructure_type) tagsHtml += '<span class="origin-tag">' + esc(origin.infrastructure_type) + '</span>';
-    if (origin.is_datacenter) tagsHtml += '<span class="origin-tag" style="color:#fb923c; border-color:rgba(249,115,22,0.4);">datacenter</span>';
-    if (origin.is_proxy) tagsHtml += '<span class="origin-tag" style="color:#f87171; border-color:rgba(239,68,68,0.4);">proxy/vpn</span>';
-    if (origin.is_mobile) tagsHtml += '<span class="origin-tag">mobile</span>';
+    if (isDatacenter) tagsHtml += '<span class="origin-tag" style="color:#fb923c; border-color:rgba(249,115,22,0.4);">datacenter</span>';
+    if (isProxy) tagsHtml += '<span class="origin-tag" style="color:#f87171; border-color:rgba(239,68,68,0.4);">proxy/vpn</span>';
+    if (isMobile) tagsHtml += '<span class="origin-tag">mobile</span>';
 
     var ipHopText = hasIp
       ? '<span class="mono" style="font-weight:700; color:#ffffff;">' + esc(origin.selected_ip) + '</span> · hop ' + esc(dash(origin.selected_from_hop))
@@ -417,11 +424,13 @@
       var ptsStr = isTriggered ? ("+" + points) : "0";
       var evidenceStr = isTriggered ? (s.evidence || "anomaly detected") : "not triggered";
 
+      var signalLabel = s.label || s.name || s.code || "Unclassified signal";
+
       rowsHtml +=
         '<tr class="signal-row ' + (isTriggered ? 'signal-row--on' : 'signal-row--off') + '">' +
           '<td class="signal-cell signal-icon">' + glyph + '</td>' +
           '<td class="signal-cell">' +
-            '<div class="signal-name">' + esc(s.name) + '</div>' +
+            '<div class="signal-name">' + esc(signalLabel) + '</div>' +
             '<div class="signal-evidence">' + esc(evidenceStr) + '</div>' +
           '</td>' +
           '<td class="signal-cell signal-points">' + esc(ptsStr) + '</td>' +

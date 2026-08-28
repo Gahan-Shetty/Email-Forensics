@@ -600,7 +600,9 @@
       "Attached are the action items from our weekly sync."
   };
 
-  function analyze(rawEmail, options) {
+  var API_BASE = (window.location.port === "8000") ? "" : "http://127.0.0.1:8000";
+
+  function analyze(input, options) {
     var opts = options || {};
     var forceOffline = opts.offlineMode || false;
     var sampleKey = opts.sampleKey || null;
@@ -610,62 +612,80 @@
         // Fast offline fallback simulation with real sample contract data
         setTimeout(function () {
           var data = SAMPLE_FIXTURES[sampleKey] || SAMPLE_FIXTURES.sample1_phishing;
-          // Clone data
           var res = JSON.parse(JSON.stringify(data));
           resolve(res);
-        }, 500);
+        }, 300);
         return;
       }
 
-      // Live backend POST request
+      // Live backend POST request to /api/v1/analyze
       var controller = new AbortController();
-      var timeoutId = setTimeout(function () { controller.abort(); }, 8000);
+      var timeoutId = setTimeout(function () { controller.abort(); }, 15000);
 
-      fetch(API_BASE + "/api/analyze", {
+      var fetchOptions = {
         method: "POST",
-        headers: { "Content-Type": "text/plain" },
-        body: rawEmail || "",
         signal: controller.signal
-      })
-      .then(function (response) {
-        clearTimeout(timeoutId);
-        if (!response.ok) {
-          return response.json().then(function (errData) {
-            throw {
-              code: errData.code || "HTTP_" + response.status,
-              userMessage: errData.detail || errData.message || "Backend server returned an error (" + response.status + ")"
-            };
-          }).catch(function (e) {
-            if (e.code) throw e;
-            throw { code: "HTTP_" + response.status, userMessage: "Server responded with status " + response.status };
-          });
-        }
-        return response.json();
-      })
-      .then(function (json) {
-        resolve(json);
-      })
-      .catch(function (err) {
-        clearTimeout(timeoutId);
-        // If fetch fails (backend not running), gracefully fall back to sample1 if user entered text
-        console.warn("Backend /api/analyze failed, falling back to simulated engine", err);
-        var fallback = JSON.parse(JSON.stringify(SAMPLE_FIXTURES.sample1_phishing));
-        if (rawEmail && rawEmail.indexOf("GitLab") !== -1) fallback = JSON.parse(JSON.stringify(SAMPLE_FIXTURES.sample2_legitimate));
-        if (rawEmail && rawEmail.indexOf("tor-relay") !== -1) fallback = JSON.parse(JSON.stringify(SAMPLE_FIXTURES.sample3_self_asserted));
-        if (rawEmail && rawEmail.indexOf("alex.rivera@gmail.com") !== -1) fallback = JSON.parse(JSON.stringify(SAMPLE_FIXTURES.sample6_webmail_no_ip));
-        resolve(fallback);
-      });
+      };
+
+      if (input instanceof File || (opts.file instanceof File)) {
+        // File Upload (Content-Type: multipart/form-data)
+        var fileObj = (input instanceof File) ? input : opts.file;
+        var formData = new FormData();
+        formData.append("file", fileObj);
+        fetchOptions.body = formData;
+      } else {
+        // Raw text paste (Content-Type: application/json)
+        fetchOptions.headers = { "Content-Type": "application/json" };
+        var emailText = (typeof input === "string") ? input : (opts.rawEmail || "");
+        fetchOptions.body = JSON.stringify({
+          raw_email: emailText,
+          options: { skip_geoip: false, include_body_heuristics: true }
+        });
+      }
+
+      fetch(API_BASE + "/api/v1/analyze", fetchOptions)
+        .then(function (response) {
+          clearTimeout(timeoutId);
+          if (!response.ok) {
+            return response.json().then(function (errData) {
+              var errObj = (errData && errData.error) ? errData.error : (errData || {});
+              throw {
+                code: errObj.code || "HTTP_" + response.status,
+                userMessage: errObj.message || errObj.detail || ("Backend server returned error status " + response.status)
+              };
+            }).catch(function (e) {
+              if (e.code) throw e;
+              throw { code: "HTTP_" + response.status, userMessage: "Backend server returned error status " + response.status };
+            });
+          }
+          return response.json();
+        })
+        .then(function (json) {
+          resolve(json);
+        })
+        .catch(function (err) {
+          clearTimeout(timeoutId);
+          console.error("Backend /api/v1/analyze request failed:", err);
+          if (err.code && err.userMessage) {
+            reject(err);
+          } else {
+            reject({
+              code: "BACKEND_UNREACHABLE",
+              userMessage: "Unable to connect to backend endpoint at " + API_BASE + "/api/v1/analyze. Ensure the backend server is running on port 8000."
+            });
+          }
+        });
     });
   }
 
   function health() {
-    return fetch(API_BASE + "/health")
+    return fetch(API_BASE + "/api/v1/health")
       .then(function (res) {
         if (!res.ok) throw new Error("Health check failed");
         return res.json();
       })
-      .catch(function () {
-        // Default healthy simulation response
+      .catch(function (err) {
+        console.warn("Backend /api/v1/health unreachable:", err);
         return {
           status: "ok",
           modules: {
@@ -679,12 +699,13 @@
   }
 
   function custodyLog() {
-    return fetch(API_BASE + "/api/custody")
+    return fetch(API_BASE + "/api/v1/custody-log")
       .then(function (res) {
         if (!res.ok) throw new Error("Custody query failed");
         return res.json();
       })
-      .catch(function () {
+      .catch(function (err) {
+        console.warn("Backend /api/v1/custody-log unreachable:", err);
         return {
           entries_count: 17,
           verification: {
@@ -696,7 +717,7 @@
   }
 
   function reportUrl(analysisId, format) {
-    return API_BASE + "/api/reports/" + encodeURIComponent(analysisId) + "." + encodeURIComponent(format);
+    return API_BASE + "/api/v1/report/" + encodeURIComponent(analysisId) + "." + encodeURIComponent(format);
   }
 
   function getSample(key) {
@@ -719,3 +740,4 @@
   };
 
 })(window);
+
