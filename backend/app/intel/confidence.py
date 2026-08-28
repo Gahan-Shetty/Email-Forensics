@@ -218,6 +218,7 @@ def build_origin(candidates: list[dict], auth: dict, chain_integrity: dict,
             )
 
             map_hops.append({
+                "hop_index": candidate.get("hop_index"),
                 "ip": candidate.get("ip"),
                 "lat": candidate_geo["lat"],
                 "lon": candidate_geo["lon"],
