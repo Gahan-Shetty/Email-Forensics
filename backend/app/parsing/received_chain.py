@@ -99,69 +99,187 @@ def parse_one_hop(raw_hop: str, hop_index: int) -> dict:
     #     "is_private_ip": True,
     #     "parse_ok": False,
     # }
-    raw_clean = str(raw_hop).replace("\r", "").replace("\n", " ").strip()
+    # try:
+    #     raw_clean = str(raw_hop).replace("\r", "").replace("\n", " ").strip()
 
-    # Split timestamp after the LAST semicolon[cite: 1]
-    if ";" in raw_clean:
-        parts = raw_clean.rsplit(";", 1)
-        hop_body = parts[0].strip()
-        ts_raw = parts[1].strip()
-    else:
-        hop_body = raw_clean
-        ts_raw = None
+    #     # Split timestamp after the LAST semicolon[cite: 1]
+    #     if ";" in raw_clean:
+    #         parts = raw_clean.rsplit(";", 1)
+    #         hop_body = parts[0].strip()
+    #         ts_raw = parts[1].strip()
+    #     else:
+    #         hop_body = raw_clean
+    #         ts_raw = None
 
-    ts_iso = None
-    if ts_raw:
-        try:
-            dt = parsedate_to_datetime(ts_raw)
-            ts_iso = dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        except Exception:
-            ts_iso = None
+    #     ts_iso = None
+    #     if ts_raw:
+    #         try:
+    #             dt = parsedate_to_datetime(ts_raw)
+    #             ts_iso = dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    #         except Exception:
+    #             ts_iso = None
 
-    from_match = RE_FROM.search(hop_body)
-    from_host = from_match.group(1).lower() if from_match else None
+    #     from_match = RE_FROM.search(hop_body)
+    #     from_host = from_match.group(1).lower() if from_match else None
 
-    from_ip = None
-    if from_match:
-        after_from = hop_body[from_match.end():]
-        ip_m = RE_IP.search(after_from)
-        if ip_m:
-            from_ip = ip_m.group(1)
+    #     from_ip = None
+    #     if from_match:
+    #         after_from = hop_body[from_match.end():]
+    #         ip_m = RE_IP.search(after_from)
+    #         if ip_m:
+    #             from_ip = ip_m.group(1)
 
-    if not from_ip:
-        ip_m = RE_IP.search(hop_body)
-        if ip_m:
-            from_ip = ip_m.group(1)
+    #     if not from_ip:
+    #         ip_m = RE_IP.search(hop_body)
+    #         if ip_m:
+    #             from_ip = ip_m.group(1)
 
-    by_match = RE_BY.search(hop_body)
-    by_host = by_match.group(1).lower() if by_match else None
+    #     by_match = RE_BY.search(hop_body)
+    #     by_host = by_match.group(1).lower() if by_match else None
+        
+    #     by_ip = None
+    #     if by_match:
+    #         after_by = hop_body[by_match.end():]
+    #         clause_end = re.search(r"\b(with|id|for|via)\b|;", after_by, re.I)
+    #         search_text = after_by[:clause_end.start()] if clause_end else after_by
+    #         by_ip_m = RE_IP.search(search_text)
+    #         if by_ip_m:
+    #             by_ip = by_ip_m.group(1)
 
-    proto_match = RE_PROTO.search(hop_body)
-    protocol = proto_match.group(1).upper() if proto_match else None
+    #     proto_match = RE_PROTO.search(hop_body)
+    #     protocol = proto_match.group(1).upper() if proto_match else None
 
-    tls = False
-    if protocol and "S" in protocol.upper():
-        tls = True
-    elif "TLS" in hop_body.upper() or "USING TLS" in hop_body.upper():
-        tls = True
+    #     tls = False
+    #     if protocol and "S" in protocol.upper():
+    #         tls = True
+    #     elif "TLS" in hop_body.upper() or "USING TLS" in hop_body.upper():
+    #         tls = True
 
-    priv_ip = is_private_ip(from_ip)
-    parse_ok = (from_host is not None) or (from_ip is not None)
+    #     priv_ip = is_private_ip(from_ip)
+    #     parse_ok = (from_host is not None) or (from_ip is not None)
 
-    return {
-        "hop_index": hop_index,
-        "raw": raw_clean,
-        "from_host": from_host,
-        "from_ip": from_ip,
-        "by_host": by_host,
-        "by_ip": None,
-        "protocol": protocol,
-        "tls": tls,
-        "timestamp": ts_iso,
-        "timestamp_raw": ts_raw,
-        "is_private_ip": priv_ip,
-        "parse_ok": parse_ok,
-    }
+    #     return {
+    #         "hop_index": hop_index,
+    #         "raw": raw_clean,
+    #         "from_host": from_host,
+    #         "from_ip": from_ip,
+    #         "by_host": by_host,
+    #         "by_ip": by_ip,
+    #         "protocol": protocol,
+    #         "tls": tls,
+    #         "timestamp": ts_iso,
+    #         "timestamp_raw": ts_raw,
+    #         "is_private_ip": priv_ip,
+    #         "parse_ok": parse_ok,
+    #     }
+    # except Exception:
+    #     return {
+    #         "hop_index": hop_index,
+    #         "raw": str(raw_hop),
+    #         "from_host": None,
+    #         "from_ip": None,
+    #         "by_host": None,
+    #         "by_ip": None,
+    #         "protocol": None,
+    #         "tls": False,
+    #         "timestamp": None,
+    #         "timestamp_raw": None,
+    #         "is_private_ip": True,
+    #         "parse_ok": False,
+    #     }
+    """Parse a single Received header value into the ReceivedHop shape."""
+    try:
+        raw_clean = str(raw_hop).replace("\r", "").replace("\n", " ").strip()
+
+        if ";" in raw_clean:
+            parts = raw_clean.rsplit(";", 1)
+            hop_body = parts[0].strip()
+            ts_raw = parts[1].strip()
+        else:
+            hop_body = raw_clean
+            ts_raw = None
+
+        ts_iso = None
+        if ts_raw:
+            try:
+                dt = parsedate_to_datetime(ts_raw)
+                ts_iso = dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            except Exception:
+                ts_iso = None
+
+        # Extract from_host and from_ip
+        from_match = RE_FROM.search(hop_body)
+        from_host = from_match.group(1).lower() if from_match else None
+
+        from_ip = None
+        if from_match:
+            after_from = hop_body[from_match.end():]
+            ip_m = RE_IP.search(after_from)
+            if ip_m:
+                from_ip = ip_m.group(1)
+
+        if not from_ip:
+            ip_m = RE_IP.search(hop_body)
+            if ip_m:
+                from_ip = ip_m.group(1)
+
+        # Extract by_host and by_ip
+        by_match = RE_BY.search(hop_body)
+        by_host = by_match.group(1).lower() if by_match else None
+
+        by_ip = None
+        if by_match:
+            after_by = hop_body[by_match.end():]
+            clause_end = re.search(r"\b(with|id|for|via)\b|;", after_by, re.I)
+            search_text = after_by[:clause_end.start()] if clause_end else after_by
+            by_ip_m = RE_IP.search(search_text)
+            if by_ip_m:
+                by_ip = by_ip_m.group(1)
+
+        # Extract protocol and TLS status
+        proto_match = RE_PROTO.search(hop_body)
+        protocol = proto_match.group(1).upper() if proto_match else None
+
+        tls = False
+        if protocol and "S" in protocol.upper():
+            tls = True
+        elif "TLS" in hop_body.upper() or "USING TLS" in hop_body.upper():
+            tls = True
+
+        priv_ip = is_private_ip(from_ip)
+        parse_ok = (from_host is not None) or (from_ip is not None)
+
+        return {
+            "hop_index": hop_index,
+            "raw": raw_clean,
+            "from_host": from_host,
+            "from_ip": from_ip,
+            "by_host": by_host,
+            "by_ip": by_ip,
+            "protocol": protocol,
+            "tls": tls,
+            "timestamp": ts_iso,
+            "timestamp_raw": ts_raw,
+            "is_private_ip": priv_ip,
+            "parse_ok": parse_ok,
+        }
+    except Exception:
+        # Guarantee no exception escapes for malformed inputs
+        return {
+            "hop_index": hop_index,
+            "raw": str(raw_hop),
+            "from_host": None,
+            "from_ip": None,
+            "by_host": None,
+            "by_ip": None,
+            "protocol": None,
+            "tls": False,
+            "timestamp": None,
+            "timestamp_raw": None,
+            "is_private_ip": True,
+            "parse_ok": False,
+        }
+
 
 
 def parse_received_chain(raw_email: str) -> list[dict]:
@@ -177,15 +295,18 @@ def parse_received_chain(raw_email: str) -> list[dict]:
     # return []
     if not raw_email:
         return []
-    msg = email.message_from_string(raw_email, policy=policy.default)
-    raw_hops = msg.get_all("Received") or []
-    if not raw_hops:
+    try:
+        msg = email.message_from_string(raw_email, policy=policy.default)
+        raw_hops = msg.get_all("Received") or []
+        if not raw_hops:
+            return []
+
+        # Reverse order so hop_index 1 is closest to sender[cite: 1, 2]
+        ordered_hops = list(reversed(raw_hops))
+
+        return [parse_one_hop(str(h), i) for i, h in enumerate(ordered_hops, start=1)]
+    except Exception:
         return []
-
-    # Reverse order so hop_index 1 is closest to sender[cite: 1, 2]
-    ordered_hops = list(reversed(raw_hops))
-
-    return [parse_one_hop(str(h), i) for i, h in enumerate(ordered_hops, start=1)]
 
 
 def assess_chain_integrity(chain: list[dict]) -> dict:
@@ -215,6 +336,71 @@ def assess_chain_integrity(chain: list[dict]) -> dict:
     #     "malformed_hops": 0,
     #     "notes": [],
     # }
+    # hop_count = len(chain)
+    # if hop_count == 0:
+    #     return {
+    #         "hop_count": 0,
+    #         "timestamps_monotonic": True,
+    #         "backward_time_jumps": 0,
+    #         "largest_gap_seconds": 0,
+    #         "gaps_suspected": False,
+    #         "malformed_hops": 0,
+    #         "notes": [],
+    #     }
+
+    # parsed_ts = []
+    # for h in chain:
+    #     if h["timestamp_raw"]:
+    #         try:
+    #             dt = parsedate_to_datetime(h["timestamp_raw"])
+    #             parsed_ts.append((h["hop_index"], dt))
+    #         except Exception:
+    #             pass
+
+    # backward_time_jumps = 0
+    # largest_gap_seconds = 0
+    # timestamps_monotonic = True
+
+    # for i in range(len(parsed_ts) - 1):
+    #     idx1, t1 = parsed_ts[i]
+    #     idx2, t2 = parsed_ts[i + 1]
+    #     delta = (t2 - t1).total_seconds()
+
+    #     if delta < -SKEW_TOLERANCE_SECONDS:
+    #         backward_time_jumps += 1
+    #         timestamps_monotonic = False
+    #     elif delta > largest_gap_seconds:
+    #         largest_gap_seconds = int(delta)
+
+    # gaps_suspected = False
+    # notes = []
+
+    # for i in range(len(chain) - 1):
+    #     by_h = (chain[i].get("by_host") or "").rstrip(".").lower()
+    #     next_from = (chain[i + 1].get("from_host") or "").rstrip(".").lower()
+
+    #     if by_h and next_from:
+    #         if by_h != next_from and not (by_h.endswith("." + next_from) or next_from.endswith("." + by_h)):
+    #             gaps_suspected = True
+    #             notes.append(f"Possible relay gap between hop {chain[i]['hop_index']} ({by_h}) and hop {chain[i+1]['hop_index']} ({next_from})")
+
+    # malformed_hops = sum(1 for h in chain if not h["parse_ok"])
+
+    # if backward_time_jumps > 0:
+    #     notes.append(f"Detected {backward_time_jumps} backward timestamp jump(s)")
+
+    # if hop_count == 1:
+    #     notes.append("Single-hop chain observed")
+
+    # return {
+    #     "hop_count": hop_count,
+    #     "timestamps_monotonic": timestamps_monotonic,
+    #     "backward_time_jumps": backward_time_jumps,
+    #     "largest_gap_seconds": largest_gap_seconds,
+    #     "gaps_suspected": gaps_suspected,
+    #     "malformed_hops": malformed_hops,
+    #     "notes": notes,
+    # }
     hop_count = len(chain)
     if hop_count == 0:
         return {
@@ -241,8 +427,8 @@ def assess_chain_integrity(chain: list[dict]) -> dict:
     timestamps_monotonic = True
 
     for i in range(len(parsed_ts) - 1):
-        idx1, t1 = parsed_ts[i]
-        idx2, t2 = parsed_ts[i + 1]
+        _, t1 = parsed_ts[i]
+        _, t2 = parsed_ts[i + 1]
         delta = (t2 - t1).total_seconds()
 
         if delta < -SKEW_TOLERANCE_SECONDS:

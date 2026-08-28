@@ -189,6 +189,124 @@ def parse_headers(raw_email: str) -> dict:
     #     "body_preview": "",
     #     "anomalies": [],
     # }
+    # try:
+    #     msg = email.message_from_string(raw_email, policy=policy.default)
+    # except Exception:
+    #     msg = email.message_from_string("", policy=policy.default)
+
+    # from_parsed = parse_mailbox(msg.get("From"))
+    # reply_to_parsed = parse_mailbox(msg.get("Reply-To")) if msg.get("Reply-To") else None
+    # return_path_parsed = parse_mailbox(msg.get("Return-Path")) if msg.get("Return-Path") else None
+
+    # to_headers = msg.get_all("To") or []
+    # to_list = []
+    # for h in to_headers:
+    #     to_list.extend(parse_mailbox_list(h))
+
+    # cc_headers = msg.get_all("Cc") or []
+    # cc_list = []
+    # for h in cc_headers:
+    #     cc_list.extend(parse_mailbox_list(h))
+
+    # subject_raw = msg.get("Subject")
+    # subject = str(make_header(decode_header(str(subject_raw)))) if subject_raw is not None else None
+
+    # message_id = msg.get("Message-ID")
+    # message_id_str = str(message_id) if message_id is not None else None
+    # message_id_domain = None
+    # if message_id_str:
+    #     clean_id = message_id_str.strip().strip("<>").strip()
+    #     if "@" in clean_id:
+    #         message_id_domain = clean_id.rsplit("@", 1)[-1].strip().lower()
+
+    # date_raw = msg.get("Date")
+    # date_raw_str = str(date_raw) if date_raw is not None else None
+    # date_iso = None
+    # if date_raw_str:
+    #     try:
+    #         dt = parsedate_to_datetime(date_raw_str)
+    #         date_iso = dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    #     except Exception:
+    #         date_iso = None
+
+    # x_mailer = msg.get("X-Mailer")
+    # x_mailer_str = str(x_mailer) if x_mailer is not None else None
+
+    # missing_headers = [h for h in EXPECTED_HEADERS if h not in msg]
+
+    # body_text = extract_body_text(raw_email)
+    # body_preview = body_text[:BODY_PREVIEW_CHARS]
+
+    # anomalies = []
+
+    # # Emit structural anomalies without scoring points[cite: 1, 2]
+    # if reply_to_parsed and from_parsed["domain"] and reply_to_parsed["domain"]:
+    #     if reply_to_parsed["domain"] != from_parsed["domain"]:
+    #         anomalies.append({
+    #             "code": "REPLYTO_DOMAIN_MISMATCH",
+    #             "severity": "medium",
+    #             "detail": f"Reply-To {reply_to_parsed['domain']} != From {from_parsed['domain']}",
+    #         })
+
+    # if return_path_parsed and from_parsed["domain"] and return_path_parsed["domain"]:
+    #     if return_path_parsed["domain"] != from_parsed["domain"]:
+    #         anomalies.append({
+    #             "code": "RETURNPATH_DOMAIN_MISMATCH",
+    #             "severity": "medium",
+    #             "detail": f"Return-Path {return_path_parsed['domain']} != From {from_parsed['domain']}",
+    #         })
+
+    # if message_id_domain and from_parsed["domain"]:
+    #     if message_id_domain != from_parsed["domain"]:
+    #         anomalies.append({
+    #             "code": "MESSAGEID_DOMAIN_MISMATCH",
+    #             "severity": "low",
+    #             "detail": f"Message-ID domain {message_id_domain} != From {from_parsed['domain']}",
+    #         })
+
+    # if not message_id_str:
+    #     anomalies.append({
+    #         "code": "MISSING_MESSAGE_ID",
+    #         "severity": "medium",
+    #         "detail": "Message-ID header is missing",
+    #     })
+
+    # if not date_raw_str:
+    #     anomalies.append({
+    #         "code": "MISSING_DATE",
+    #         "severity": "low",
+    #         "detail": "Date header is missing",
+    #     })
+
+    # if from_parsed["display_name"] and from_parsed["domain"]:
+    #     disp_name = from_parsed["display_name"].lower()
+    #     domain_tokens = re.findall(r"\b[a-z0-9-]+\.[a-z]{2,}\b", disp_name)
+    #     for token in domain_tokens:
+    #         if token != from_parsed["domain"]:
+    #             anomalies.append({
+    #                 "code": "DISPLAY_NAME_LOOKALIKE",
+    #                 "severity": "high",
+    #                 "detail": f"Display name contains domain-like string '{token}' differing from From domain '{from_parsed['domain']}'",
+    #             })
+    #             break
+
+    # return {
+    #     "from": from_parsed,
+    #     "reply_to": reply_to_parsed,
+    #     "return_path": return_path_parsed,
+    #     "to": to_list,
+    #     "cc": cc_list,
+    #     "subject": subject,
+    #     "message_id": message_id_str,
+    #     "message_id_domain": message_id_domain,
+    #     "date": date_iso,
+    #     "date_raw": date_raw_str,
+    #     "x_mailer": x_mailer_str,
+    #     "raw_header_count": len(msg.keys()),
+    #     "missing_headers": missing_headers,
+    #     "body_preview": body_preview,
+    #     "anomalies": anomalies,
+    # }
     try:
         msg = email.message_from_string(raw_email, policy=policy.default)
     except Exception:
@@ -239,7 +357,6 @@ def parse_headers(raw_email: str) -> dict:
 
     anomalies = []
 
-    # Emit structural anomalies without scoring points[cite: 1, 2]
     if reply_to_parsed and from_parsed["domain"] and reply_to_parsed["domain"]:
         if reply_to_parsed["domain"] != from_parsed["domain"]:
             anomalies.append({
