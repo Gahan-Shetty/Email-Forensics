@@ -1,5 +1,5 @@
 /**
- * Email Forensic Analyzer (EFA) / TraceMail.AI — Application Controller
+ * Email Forensic Analyzer (EFA) — Application Controller
  * ThreeUI Kage Landing Page Edition with 3D WebGL, Chapter Rail, Audio Synthesizer,
  * and 6-Panel Forensic State Machine.
  */
@@ -250,18 +250,122 @@
       el.className = "chip";
       if (status === "live") {
         el.classList.add("chip-live");
+        el.innerHTML = '<span class="chip-dot"></span>' + elementId.replace("chip-", "").toUpperCase() + ' · live';
       } else if (status === "stub") {
         el.classList.add("chip-stub");
-      } else if (status === "error") {
+        el.innerHTML = '<span class="chip-dot"></span>' + elementId.replace("chip-", "").toUpperCase() + ' · stub';
+      } else {
         el.classList.add("chip-error");
+        el.innerHTML = '<span class="chip-dot"></span>' + elementId.replace("chip-", "").toUpperCase() + ' · error';
       }
     }
 
-    // 12. Quick Nav Section Scroll Spy
-    function setupReportScrollSpy() {
-      var items = document.querySelectorAll(".quick-nav-item");
-      if (!items || items.length === 0) return;
+    // 12. Chapter Rail Tracking (I · II · III · IV · V) & Slide Navigation Trigger
+    function setupChapterRail() {
+      var dots = document.querySelectorAll(".chapter-dot");
+      var chapters = [
+        document.getElementById("chapter-hero"),
+        document.getElementById("chapter-analyzer"),
+        document.getElementById("chapter-vault"),
+        document.getElementById("chapter-matrix"),
+        document.getElementById("chapter-terminal")
+      ].filter(Boolean);
 
+      // Slide wave trigger on dot click
+      dots.forEach(function (dot) {
+        dot.addEventListener("click", function () {
+          var targetId = dot.getAttribute("href");
+          if (targetId && targetId.startsWith("#")) {
+            var targetSection = document.querySelector(targetId);
+            if (targetSection) {
+              triggerSlideAnimation(targetSection);
+            }
+          }
+        });
+      });
+
+      // Also trigger on all intra-page chapter anchor links
+      var chapterLinks = document.querySelectorAll('a[href^="#chapter-"]');
+      chapterLinks.forEach(function (link) {
+        link.addEventListener("click", function () {
+          var targetId = link.getAttribute("href");
+          if (targetId) {
+            var targetSection = document.querySelector(targetId);
+            if (targetSection) {
+              triggerSlideAnimation(targetSection);
+            }
+          }
+        });
+      });
+
+      function triggerSlideAnimation(section) {
+        section.classList.remove("animating-slide");
+        void section.offsetWidth;
+        section.classList.add("animating-slide");
+        setTimeout(function () {
+          section.classList.remove("animating-slide");
+        }, 850);
+      }
+
+      function updateRail() {
+        var scrollPos = window.scrollY + window.innerHeight * 0.35;
+        var activeIndex = 0;
+
+        for (var i = 0; i < chapters.length; i++) {
+          var ch = chapters[i];
+          if (ch.offsetTop <= scrollPos) {
+            activeIndex = i;
+          }
+        }
+
+        dots.forEach(function (dot, idx) {
+          if (idx === activeIndex) {
+            dot.classList.add("active");
+          } else {
+            dot.classList.remove("active");
+          }
+        });
+      }
+
+      window.addEventListener("scroll", updateRail, { passive: true });
+      updateRail();
+    }
+    setupChapterRail();
+
+    // 12b. IntersectionObserver for Chapter Entrance Slide Animations
+    function setupChapterObserver() {
+      var chapters = document.querySelectorAll(".chapter-section");
+      
+      // Immediately activate Hero section
+      var hero = document.getElementById("chapter-hero");
+      if (hero) hero.classList.add("in-view");
+
+      if ("IntersectionObserver" in window) {
+        var observer = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("in-view");
+            }
+          });
+        }, {
+          threshold: 0.12,
+          rootMargin: "0px 0px -40px 0px"
+        });
+
+        chapters.forEach(function (ch) {
+          observer.observe(ch);
+        });
+      } else {
+        chapters.forEach(function (ch) {
+          ch.classList.add("in-view");
+        });
+      }
+    }
+    setupChapterObserver();
+
+    // 13. Section Scrollspy for Results Panel
+    function setupReportScrollSpy() {
+      var navLinks = document.querySelectorAll(".quick-nav-item");
       var sections = [
         document.getElementById("sec-verdict"),
         document.getElementById("sec-auth"),
@@ -272,29 +376,33 @@
       ].filter(Boolean);
 
       function onReportScroll() {
-        var scrollPos = window.pageYOffset + 200;
-        var currentIdx = 0;
+        var scrollPos = window.scrollY + 160;
+        var currentSectionId = "";
 
         for (var i = 0; i < sections.length; i++) {
-          if (sections[i].offsetTop <= scrollPos) {
-            currentIdx = i;
+          var sec = sections[i];
+          if (sec.offsetTop <= scrollPos && (sec.offsetTop + sec.offsetHeight) > scrollPos) {
+            currentSectionId = sec.getAttribute("id");
+            break;
           }
         }
 
-        items.forEach(function (it, idx) {
-          if (idx === currentIdx) {
-            it.classList.add("active");
+        navLinks.forEach(function (link) {
+          var href = link.getAttribute("href");
+          if (href === "#" + currentSectionId) {
+            link.classList.add("active");
           } else {
-            it.classList.remove("active");
+            link.classList.remove("active");
           }
         });
       }
 
-      window.addEventListener("scroll", onReportScroll);
+      window.removeEventListener("scroll", onReportScroll);
+      window.addEventListener("scroll", onReportScroll, { passive: true });
       onReportScroll();
     }
 
-    // 13. Web Audio Cyber Synthesizer
+    // 14. Web Audio Cyber Synthesizer
     if (audioBtn) {
       audioBtn.addEventListener("click", function () {
         var audioIcon = document.getElementById("audio-icon");
@@ -312,7 +420,7 @@
               var filter = audioContext.createBiquadFilter();
 
               osc.type = "sine";
-              osc.frequency.setValueAtTime(55, audioContext.currentTime);
+              osc.frequency.setValueAtTime(55, audioContext.currentTime); // Deep 55Hz cyber hum
 
               filter.type = "lowpass";
               filter.frequency.setValueAtTime(180, audioContext.currentTime);
@@ -349,7 +457,7 @@
       });
     }
 
-    // 14. Custody Vault Tamper Simulator
+    // 15. Custody Vault Tamper Simulator
     if (tamperBtn) {
       tamperBtn.addEventListener("click", function () {
         var badge = document.getElementById("vault-live-badge");

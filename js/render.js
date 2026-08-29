@@ -1,6 +1,6 @@
 /**
- * Email Forensic Analyzer (EFA) / TraceMail.AI — Panel Rendering Engine
- * Compliant with 05-M5-FRONTEND-BUILD-SPEC.md & API Contract v1.0
+ * Email Forensic Analyzer (EFA) — Panel Rendering Engine
+ * Compliant with 05-M5-FRONTEND-BUILD-SPEC.md & API Contract
  */
 
 (function (window) {
@@ -330,7 +330,7 @@
       for (var i = 0; i < chain.length; i++) {
         var hop = chain[i];
         var cand = hop.from_ip ? byIp[hop.from_ip] : null;
-        var isExcluded = cand && (cand.is_excluded || cand.status === "excluded" || cand.excluded);
+        var isExcluded = cand && (cand.is_excluded || cand.status === "excluded");
         var isHop1 = hop.hop_index === 1 || i === 0;
 
         var tlsBadge = hop.tls
@@ -355,8 +355,8 @@
               '<span>' + esc(dash(hop.by_host)) + '</span>' +
               '<div style="margin-left:auto;">' + tlsBadge + '</div>' +
             '</div>' +
-            (isExcluded && (cand.exclusion_reason || cand.exclusion_reasons)
-              ? '<div class="hop-exclusion-reason">' + esc(cand.exclusion_reason || (cand.exclusion_reasons ? cand.exclusion_reasons.join(", ") : "")) + '</div>'
+            (isExcluded && cand.exclusion_reason
+              ? '<div class="hop-exclusion-reason">' + esc(cand.exclusion_reason) + '</div>'
               : '') +
           '</div>';
       }
@@ -365,10 +365,8 @@
 
     // Chain integrity strip
     var hopCount = integrity.hop_count !== undefined ? integrity.hop_count : chain.length;
-    var orderText = (integrity.timestamps_monotonic !== undefined ? integrity.timestamps_monotonic : integrity.chronological_order)
-      ? '✓ timestamps in order'
-      : '✕ timestamp anomaly';
-    var backwardJumps = (integrity.backward_time_jumps !== undefined) ? integrity.backward_time_jumps : (integrity.backward_jumps !== undefined ? integrity.backward_jumps : 0);
+    var orderText = integrity.chronological_order ? '✓ timestamps in order' : '✕ timestamp anomaly';
+    var backwardJumps = integrity.backward_jumps !== undefined ? integrity.backward_jumps : 0;
     var largestGap = integrity.largest_gap_seconds !== undefined ? integrity.largest_gap_seconds + 's gap' : '—';
 
     var notesHtml = "";
@@ -405,11 +403,11 @@
 
     // Fallback template of 5 signals if partial/empty
     var defaultSignals = [
-      { code: "AUTH_FAIL", label: "SPF/DKIM/DMARC failure", points: 30, triggered: false, evidence: "not triggered" },
-      { code: "INFRA_FLAGGED", label: "Datacenter / proxy / hosting infrastructure", points: 25, triggered: false, evidence: "not triggered" },
-      { code: "REPLYTO_MISMATCH", label: "Reply-To domain != From domain", points: 20, triggered: false, evidence: "not triggered" },
-      { code: "CHAIN_ANOMALY", label: "Broken or backward Received chain", points: 15, triggered: false, evidence: "not triggered" },
-      { code: "URGENCY_KEYWORDS", label: "Suspicious urgency language", points: 10, triggered: false, evidence: "not triggered" }
+      { name: "SPF/DKIM/DMARC failure", points: 30, triggered: false, evidence: "not triggered" },
+      { name: "Datacenter / proxy / hosting infrastructure", points: 25, triggered: false, evidence: "not triggered" },
+      { name: "Reply-To domain != From domain", points: 20, triggered: false, evidence: "not triggered" },
+      { name: "Broken or backward Received chain", points: 15, triggered: false, evidence: "not triggered" },
+      { name: "Suspicious urgency language", points: 10, triggered: false, evidence: "not triggered" }
     ];
 
     var displaySignals = signals.length === 5 ? signals : defaultSignals;
