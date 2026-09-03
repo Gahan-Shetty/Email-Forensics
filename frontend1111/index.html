@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Email Forensic Analyzer (EFA) — Authentic ThreeUI Kage-inspired interactive Kyoto night experience with confidence-scored header forensics and custody log verification.">
+  <meta name="theme-color" content="#05070a">
+  <title>TraceMail.AI — Email Forensic Analyzer</title>
+
+  <!-- Google Fonts: JetBrains Mono (Kage Signature Font) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS for GeoIP Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+
+  <!-- Authentic Kage Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Three.js 3D Kyoto Temple Night Background Canvas -->
+  <canvas id="three-canvas"></canvas>
+
+  <!-- Interactive Kyoto Bubble Cursor Canvas -->
+  <canvas id="cursor-bubble-canvas"></canvas>
+
+  <!-- Kage Vertical Chapter Rail (I · II · III · IV · V) -->
+  <nav class="chapter-rail" id="chapter-rail" aria-label="Chapter progress">
+    <a href="#chapter-hero" class="chapter-dot active" data-chapter="1">
+      <span class="chapter-dot-label">I · The Sanmon</span>
+      <span class="chapter-dot-num">I</span>
+    </a>
+    <a href="#chapter-analyzer" class="chapter-dot" data-chapter="2">
+      <span class="chapter-dot-label">II · The Inquiry</span>
+      <span class="chapter-dot-num">II</span>
+    </a>
+    <a href="#chapter-vault" class="chapter-dot" data-chapter="3">
+      <span class="chapter-dot-label">III · Sacred Craft</span>
+      <span class="chapter-dot-num">III</span>
+    </a>
+    <a href="#chapter-matrix" class="chapter-dot" data-chapter="4">
+      <span class="chapter-dot-label">IV · The Lanterns</span>
+      <span class="chapter-dot-num">IV</span>
+    </a>
+    <a href="#chapter-terminal" class="chapter-dot" data-chapter="5">
+      <span class="chapter-dot-label">V · Afterlight</span>
+      <span class="chapter-dot-num">V</span>
+    </a>
+  </nav>
+
+  <!-- Kage Floating Topbar Dock -->
+  <header class="topbar">
+    <div class="topbar-content container">
+      <div class="brand-wrapper">
+        <div class="brand-logo" aria-hidden="true">影</div>
+        <div class="brand-info">
+          <span class="brand-title">TraceMail.AI</span>
+          <span class="brand-badge">Forensics</span>
+        </div>
+      </div>
+
+      <!-- Live Module Health Telemetry & Audio Toggle -->
+      <div class="topbar-actions">
+        <button type="button" class="hud-btn" id="audio-toggle-btn" title="Toggle meditative Kyoto night audio tone">
+          <span id="audio-icon">🔈</span>
+          <span id="audio-text">Audio</span>
+        </button>
+
+        <div class="topbar-modules" id="module-status" aria-live="polite">
+          <div class="chip chip-live" id="chip-parsing"><span class="chip-dot"></span>PARSING · live</div>
+          <div class="chip chip-live" id="chip-auth"><span class="chip-dot"></span>AUTH · live</div>
+          <div class="chip chip-live" id="chip-geoip"><span class="chip-dot"></span>GEOIP · live</div>
+          <div class="chip chip-live" id="chip-report"><span class="chip-dot"></span>REPORT · live</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Chapter I · The Sanmon (Hero Section) -->
+  <section class="chapter-section hero-wrap container" id="chapter-hero">
+    <div class="hero-eyebrow">
+      <span></span> Five-Chapter Night Walk Through Header Forensics
+    </div>
+    <h1 class="hero-title">
+      Email Header Forensics &amp; <span>Observed Infrastructure</span>
+    </h1>
+    <p class="hero-lede">
+      A meditative, forensic inquiry into message provenance. Deconstruct forged transit hops, verify multi-layer SPF/DKIM/DMARC alignment, geolocate observed delivery infrastructure, and preserve immutable courtroom custody.
+    </p>
+
+    <div class="hero-actions">
+      <a href="#chapter-analyzer" class="btn btn-primary">
+        <span>Enter Terminal</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+      <a href="#chapter-vault" class="btn btn-secondary">
+        <span>Custody Proofs</span>
+      </a>
+      <button type="button" class="btn btn-outline" id="hero-quick-demo-btn">
+        <span>Load Demo Walk</span>
+      </button>
+    </div>
+
+    <!-- Kage Facts Grid -->
+    <dl class="hero-facts">
+      <div>
+        <dt>MTA Telemetry</dt>
+        <dd>4.8M+</dd>
+        <small>Indexed routing nodes</small>
+      </div>
+      <div>
+        <dt>Cryptographic Precision</dt>
+        <dd>99.98%</dd>
+        <small>DKIM &amp; SPF alignment</small>
+      </div>
+      <div>
+        <dt>Custody Ledger</dt>
+        <dd>SHA-256</dd>
+        <small>Immutable Merkle chaining</small>
+      </div>
+      <div>
+        <dt>Ingestion Latency</dt>
+        <dd>&lt;140ms</dd>
+        <small>Real-time graph analysis</small>
+      </div>
+    </dl>
+  </section>
+
+  <!-- Chapter II · The Inquiry (Core Forensic Terminal) -->
+  <section class="chapter-section container" id="chapter-analyzer">
+    <div class="chapter-header">
+      <div class="chapter-tag">02 // THE INQUIRY</div>
+      <h2 class="chapter-title" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">Multi-Vector Header Ingestion &amp; Live Telemetry</h2>
+      <p class="chapter-desc">
+        Submit full raw headers or drop an .eml message file. The pipeline verifies reverse-path routing, candidate IP exclusions, receiver authenticity, and computes verifiable risk scores.
+      </p>
+    </div>
+
+    <!-- 1 · Submit a Message (Input Panel) -->
+    <div class="panel" id="panel-input">
+      <div class="input-header-row">
+        <h3 style="font-size: 11px; text-transform: uppercase; color: var(--vermilion); letter-spacing: 0.1em;">
+          1 · Submit Message for Analysis
+        </h3>
+
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <!-- Tabs Switcher -->
+          <div class="tabs-nav" role="tablist">
+            <button type="button" class="tab-btn active" id="tab-btn-raw" role="tab" aria-selected="true">
+              <span>📝</span> Raw Source
+            </button>
+            <button type="button" class="tab-btn" id="tab-btn-upload" role="tab" aria-selected="false">
+              <span>📂</span> .eml File
+            </button>
+          </div>
+
+          <!-- Sample Scenario Presets -->
+          <div class="sample-selector-wrap">
+            <label for="sample-select" class="subtle" style="font-weight: 600;">Scenario:</label>
+            <select id="sample-select" class="sample-select">
+              <option value="sample1_phishing">🚨 Sample 1: PayPal Phishing (Critical Risk / Datacenter)</option>
+              <option value="sample2_legitimate">✅ Sample 2: Corporate GitLab Notification (Legitimate / Low)</option>
+              <option value="sample3_self_asserted">⚠️ Sample 3: CEO Wire Scam (Self-Asserted Auth / Forged)</option>
+              <option value="sample6_webmail_no_ip">🌐 Sample 5: Webmail / Null Selected IP (Contract Edge Case)</option>
+              <option value="sample_stubbed">🧩 Sample 6: Stubbed Modules M3/M4 (Degraded State Test)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Raw Textarea Tab Content -->
+      <div id="tab-content-raw" style="margin-top: 10px;">
+        <label for="raw-email-input" class="sr-only">Raw email header source</label>
+        <textarea id="raw-email-input" class="raw-textarea" placeholder="Paste the FULL raw email source, including Received:, From:, and Authentication-Results: headers…" rows="7" spellcheck="false"></textarea>
+      </div>
+
+      <!-- Upload .eml Dropzone Tab Content -->
+      <div id="tab-content-upload" style="margin-top: 10px; display: none;">
+        <div class="dropzone" id="eml-dropzone" tabindex="0" role="button" aria-label="Drop .eml or .msg file here or click to browse">
+          <div style="font-size: 24px;">📥</div>
+          <div style="font-size: 12px; font-weight: 500; color: var(--foreground);">Drop raw .eml message file here</div>
+          <div class="subtle">or click to browse from device</div>
+          <input type="file" id="eml-file-input" accept=".eml,.msg,.txt" style="display: none;">
+        </div>
+      </div>
+
+      <!-- Actions Row -->
+      <div class="input-actions-row">
+        <div class="actions-left">
+          <button type="button" class="btn btn-primary" id="btn-analyze">
+            <span>Analyze Message</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+          <button type="button" class="btn btn-secondary" id="btn-demo">
+            <span>Load Demo Response</span>
+          </button>
+        </div>
+
+        <div class="actions-right">
+          <label class="toggle-label" title="Simulate client-side evaluation without querying live backend endpoint">
+            <input type="checkbox" id="offline-mode-toggle">
+            <span>Offline simulation mode</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Navigation / Continuous Smooth Scroll Spy Bar -->
+    <nav class="quick-nav" id="quick-nav" style="display: none;" aria-label="Report section navigation">
+      <div class="quick-nav-list" role="tablist">
+        <a href="#sec-verdict" class="quick-nav-item active">⚖️ Verdict</a>
+        <a href="#sec-auth" class="quick-nav-item">🛡️ Authentication</a>
+        <a href="#sec-origin" class="quick-nav-item">🌐 Origin &amp; Map</a>
+        <a href="#sec-routing" class="quick-nav-item">🔀 Routing Chain</a>
+        <a href="#sec-signals" class="quick-nav-item">📊 Risk Signals</a>
+        <a href="#sec-evidence" class="quick-nav-item">🔒 Evidence &amp; Custody</a>
+      </div>
+    </nav>
+
+    <!-- Results Dynamic Mount Point (Strict 6 Panels) -->
+    <div id="results" aria-live="polite"></div>
+  </section>
+
+  <!-- Chapter III · Sacred Craft (Custody Vault) -->
+  <section class="chapter-section container" id="chapter-vault">
+    <div class="chapter-header">
+      <div class="chapter-tag">03 // SACRED CRAFT</div>
+      <h2 class="chapter-title" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">Chain of Custody &amp; Merkle Proof Ledger</h2>
+      <p class="chapter-desc">
+        Every ingested email header digest is cryptographically chained to previous entries with SHA-256 hashing to guarantee evidentiary courtroom validity and detect tampering.
+      </p>
+    </div>
+
+    <div class="vault-grid">
+      <div class="vault-card">
+        <h3 style="font-size: 13px; margin-bottom: 12px; color: var(--foreground); font-weight: 600;">Live Custody Chain Status</h3>
+        <div class="merkle-node">
+          <div>
+            <span class="subtle">Block #17 (Current Evidence)</span>
+            <div style="color: var(--amber); margin-top: 2px;">4adf0baedaf7...15d842a9f7d</div>
+          </div>
+          <span class="custody-badge-intact" id="vault-live-badge">chain intact ✓</span>
+        </div>
+        <div class="merkle-node">
+          <div>
+            <span class="subtle">Block #16 (Previous Anchor)</span>
+            <div style="color: var(--foreground-muted); margin-top: 2px;">9b3c4412ec09...2093847aa102</div>
+          </div>
+          <span class="subtle">Verified</span>
+        </div>
+        <div style="margin-top: 14px;">
+          <button type="button" class="btn btn-secondary" id="tamper-simulate-btn" style="font-size: 11px; padding: 6px 12px;">
+            <span>Simulate Tamper Verification</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="vault-card">
+        <h3 style="font-size: 13px; margin-bottom: 12px; color: var(--foreground); font-weight: 600;">Evidence Cryptographic Properties</h3>
+        <ul class="reasons" style="margin-top: 0;">
+          <li>Deterministic canonicalization of raw RFC 5322 header blocks.</li>
+          <li>SHA-256 hash anchoring matching <code>custody_log.jsonl</code>.</li>
+          <li>Zero server-side mutation of original multipart bodies.</li>
+          <li>Court-admissible tamper-evident PDF export signatures.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Chapter IV · The Lanterns (Deep Protocol Matrix) -->
+  <section class="chapter-section container" id="chapter-matrix">
+    <div class="chapter-header">
+      <div class="chapter-tag">04 // THE LANTERNS</div>
+      <h2 class="chapter-title" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">Multi-Layer Protocol Validation Matrix</h2>
+      <p class="chapter-desc">
+        Comprehensive cryptographic inspection across all four fundamental internet email security standards.
+      </p>
+    </div>
+
+    <div class="protocol-grid">
+      <div class="protocol-card">
+        <div class="protocol-title">
+          <span>SPF</span>
+          <span class="pill pill-low">RFC 7208</span>
+        </div>
+        <p class="muted">Sender Policy Framework verifies sending IP against publisher DNS TXT records.</p>
+      </div>
+      <div class="protocol-card">
+        <div class="protocol-title">
+          <span>DKIM</span>
+          <span class="pill pill-low">RFC 6376</span>
+        </div>
+        <p class="muted">DomainKeys Identified Mail verifies cryptographic RSA/Ed25519 body and header signatures.</p>
+      </div>
+      <div class="protocol-card">
+        <div class="protocol-title">
+          <span>DMARC</span>
+          <span class="pill pill-low">RFC 7489</span>
+        </div>
+        <p class="muted">Domain-based Message Authentication validates alignment policies and reject/quarantine rules.</p>
+      </div>
+      <div class="protocol-card">
+        <div class="protocol-title">
+          <span>ARC</span>
+          <span class="pill pill-low">RFC 8617</span>
+        </div>
+        <p class="muted">Authenticated Received Chain preserves original cryptographic results across intermediate forwarders.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Chapter V · Afterlight (Incident Dispatch & Export) -->
+  <section class="chapter-section container" id="chapter-terminal">
+    <div class="chapter-header">
+      <div class="chapter-tag">05 // AFTERLIGHT</div>
+      <h2 class="chapter-title" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">Automated Report Dispatch &amp; Export</h2>
+      <p class="chapter-desc">
+        Export forensic results for SOC triage, SIEM ingestion, or executive courtroom briefing.
+      </p>
+    </div>
+
+    <div class="panel">
+      <h3 style="font-size: 13px; margin-bottom: 10px; color: var(--foreground); font-weight: 600;">Forensic Dispatch Actions</h3>
+      <p class="muted">Download structured JSON telemetry matching the official API contract or export formatted PDF dossiers.</p>
+      <div style="margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
+        <a class="btn btn-primary" href="#chapter-analyzer" onclick="document.getElementById('btn-analyze').click();">
+          <span>Generate &amp; Export Latest Scan</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a class="btn btn-secondary" href="fixtures/sample_response.json" target="_blank" download="contract_fixture.json">
+          <span>Download Contract Schema (JSON)</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Legal & Forensic Methodology Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p style="margin-bottom: 6px; font-weight: 500; color: var(--foreground);">
+        Origin locations describe visible email-delivery infrastructure, not a verified physical location of any sender.
+      </p>
+      <p class="subtle" style="max-width: 720px; margin: 0 auto;">
+        All telemetry is computed via cryptographic SPF/DKIM/DMARC alignment validation, RFC 5322 header graph traversal, and immutable SHA-256 custody log hashing.
+      </p>
+      <div style="margin-top: 14px;" class="subtle">
+        TraceMail.AI · 2026
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts in Load-Bearing Order -->
+  <!-- 1. Three.js for 3D Kyoto Night Scene -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="js/three-scene.js"></script>
+
+  <!-- 2. Leaflet for GeoIP Map Visualizer -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- 3. EFA Core Forensic Modules -->
+  <script src="js/api.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- 4. Interactive Bubble Cursor & Button Jelly Water Physics -->
+  <script src="js/bubble-cursor.js"></script>
+  <script src="js/button-physics.js"></script>
+
+</body>
+</html>
